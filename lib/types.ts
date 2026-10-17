@@ -60,3 +60,51 @@ export type PayoutAccount = {
 };
 
 export type ActorType = "admin" | "member" | "guest" | "system";
+
+/** Statuses a deadline can expire. */
+export const EXPIRABLE_STATUSES: InviteStatus[] = ["sent", "opened", "said_yes"];
+
+export type Invite = {
+  id: string;
+  token: string;
+  inviter_id: string;
+  guest_first_name: string;
+  guest_phone_e164: string;
+  key_hash: string;
+  key_plain_draft: string | null;
+  message_combo: number[];
+  key_line_index: number;
+  covered_line_index: number | null;
+  status: InviteStatus;
+  no_taps: number;
+  board_visible: boolean;
+  sent_at: string | null;
+  opened_at: string | null;
+  yes_at: string | null;
+  expires_at: string | null;
+  hold_remaining_ms: number | null;
+  covered: boolean;
+  wrong_attempts: number;
+  locked_until: string | null;
+  ticket_code: string | null;
+  checked_in_at: string | null;
+  created_at: string;
+};
+
+export type PaymentStatus = "open" | "claimed" | "confirmed" | "not_found" | "void";
+
+export type Payment = {
+  id: string;
+  invite_id: string;
+  payer_type: "guest" | "member";
+  payer_person_id: string | null;
+  reference: string;
+  amount_kobo: number;
+  account_id: string;
+  status: PaymentStatus;
+  sender_name: string | null;
+  claimed_at: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+};

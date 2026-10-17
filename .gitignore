@@ -9,3 +9,5 @@ next-env.d.ts
 npm-debug.log*
 supabase/.temp/
 supabase/.branches/
+public/g/
+lib/generated/

@@ -4,19 +4,26 @@ import { MiniSeal } from "@/components/Seal";
 import { ToastProvider } from "@/components/Toast";
 import { requireAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
+import { db } from "@/lib/db";
 import { getEvent } from "@/lib/settings";
 import { signOut } from "../login/actions";
 
-// Phase 1 screens. Later phases add Overview, Guests, Payments, Invite someone, Door and the Board.
 const NAV: NavItem[] = [
+  { href: "/admin", label: t("admin.nav.overview"), icon: "overview", exact: true },
+  { href: "/admin/guests", label: t("admin.nav.guests"), icon: "guests" },
+  { href: "/admin/payments", label: t("admin.nav.payments"), icon: "payments", badge: "payments" },
   { href: "/admin/members", label: t("admin.nav.members"), icon: "members" },
+  { href: "/admin/invite", label: t("admin.nav.invite"), icon: "invite" },
   { href: "/admin/event", label: t("admin.nav.event"), icon: "event" },
   { href: "/admin/account", label: t("admin.nav.account"), icon: "account" },
+  { href: "/admin/door", label: t("admin.nav.door"), icon: "door" },
+  { href: "/board", label: t("admin.nav.board"), icon: "board", external: true },
 ];
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
   const event = await getEvent();
+  const { count: claims } = await db().from("payments").select("id", { count: "exact", head: true }).eq("status", "claimed");
   return (
     <ToastProvider>
       <div className="admin">
@@ -28,7 +35,7 @@ export default async function PortalLayout({ children }: { children: React.React
               <small>{t("admin.members.host")}</small>
             </span>
           </div>
-          <AdminNav items={NAV} label={t("admin.nav.label")} />
+          <AdminNav items={NAV} label={t("admin.nav.label")} badges={{ payments: claims ?? 0 }} />
           <div className="side-foot">
             <div className={event.invites_open ? "status-line" : "status-line off"}>
               <i />

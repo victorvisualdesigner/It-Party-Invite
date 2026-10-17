@@ -2,6 +2,7 @@
 
 import { useId, useState, useTransition, type FormEvent } from "react";
 import { Dialog } from "@/components/Dialog";
+import { ConfirmDialog, KeyDialog as BaseKeyDialog } from "@/components/admin/Dialogs";
 import { Icon } from "@/components/Icon";
 import { MiniSeal } from "@/components/Seal";
 import { useToast } from "@/components/Toast";
@@ -26,82 +27,16 @@ const SLOT_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10, 15, 20];
 
 /* ---------- Dialogs ---------- */
 
-/** Shows a fresh key once, with the one tap WhatsApp send. */
 function KeyDialog({ delivery, onClose }: { delivery: KeyDelivery; onClose: () => void }) {
-  const toast = useToast();
-  const titleId = useId();
   return (
-    <Dialog labelledBy={titleId} onClose={onClose}>
-      <h2 id={titleId}>{t("admin.members.key_title")}</h2>
-      <div className="keybox" style={{ margin: "12px 0 4px" }}>
-        <div className="keychip">
-          <Icon name="key" />
-          <div>
-            <span className="label">{delivery.firstName}</span>
-            <br />
-            <b data-key>{delivery.key}</b>
-          </div>
-        </div>
-        <p className="note">{t("admin.members.key_ready", { member: delivery.firstName })}</p>
-      </div>
-      <div className="actions">
-        <button className="btn btn-ghost btn-sm" type="button" onClick={onClose}>
-          {t("admin.members.cancel")}
-        </button>
-        <a
-          className="btn btn-gold btn-sm"
-          href={delivery.waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-autofocus
-          data-send-key
-          onClick={() => toast(t("admin.members.key_sent"))}
-        >
-          <Icon name="whatsapp" />
-          <span>{t("admin.members.send_key")}</span>
-        </a>
-      </div>
-    </Dialog>
-  );
-}
-
-function ConfirmDialog({
-  title,
-  body,
-  okLabel,
-  danger = false,
-  onOk,
-  onClose,
-}: {
-  title: string;
-  body: string;
-  okLabel: string;
-  danger?: boolean;
-  onOk: () => Promise<void>;
-  onClose: () => void;
-}) {
-  const titleId = useId();
-  const [pending, startTransition] = useTransition();
-  return (
-    <Dialog labelledBy={titleId} onClose={onClose}>
-      <h2 id={titleId}>{title}</h2>
-      <p>{body}</p>
-      <div className="actions">
-        <button className="btn btn-ghost btn-sm" type="button" onClick={onClose}>
-          {t("admin.members.cancel")}
-        </button>
-        <button
-          className={danger ? "btn btn-danger btn-sm" : "btn btn-gold btn-sm"}
-          type="button"
-          data-autofocus
-          disabled={pending}
-          aria-busy={pending}
-          onClick={() => startTransition(onOk)}
-        >
-          {pending ? t("admin.common.saving") : okLabel}
-        </button>
-      </div>
-    </Dialog>
+    <BaseKeyDialog
+      name={delivery.firstName}
+      keyText={delivery.key}
+      note={t("admin.members.key_ready", { member: delivery.firstName })}
+      waHref={delivery.waHref}
+      sendLabel={t("admin.members.send_key")}
+      onClose={onClose}
+    />
   );
 }
 

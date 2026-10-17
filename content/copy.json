@@ -82,7 +82,8 @@
       "held_chip": "Held {time_left}",
       "sender_name_placeholder": "As it appears on your bank app",
       "sender_name_error": "Add the name on the account you sent from.",
-      "mid_payment_note": "These details are yours until you pay, even if the hosts change accounts."
+      "mid_payment_note": "These details are yours until you pay, even if the hosts change accounts.",
+      "no_account": "The transfer details are almost ready. Check back in a little while."
     },
     "awaiting": {
       "title": "Your card is being pressed",
@@ -155,7 +156,8 @@
       "stamp": "YES",
       "left": "No has left the chat.",
       "back": "No has rejoined the chat."
-    }
+    },
+    "network": "The connection dropped. Tap again when you're back online."
   },
   "member": {
     "login": {
@@ -165,7 +167,8 @@
       "key_label": "Your key",
       "submit": "Enter",
       "error": "That doesn't match. Ask the host to check your number or reset your key.",
-      "signout": "Sign out"
+      "signout": "Sign out",
+      "devices_full": "This number is already signed in on three phones. Ask the host to reset your key."
     },
     "home": {
       "greeting": "Evening, {member}.",
@@ -178,7 +181,8 @@
       "greeting_morning": "Morning, {member}.",
       "greeting_afternoon": "Afternoon, {member}.",
       "paid_count": "{n} paid",
-      "waiting_count": "{n} on their way"
+      "waiting_count": "{n} on their way",
+      "not_you": "Not you?"
     },
     "new_invite": {
       "title": "Who's coming?",
@@ -204,7 +208,18 @@
       "pay_help": "Adds a line telling them it's covered. You'll get the transfer details right after.",
       "copied": "Message copied. Paste it into their chat.",
       "another": "Invite someone else",
-      "done": "Back to your guests"
+      "done": "Back to your guests",
+      "slots_short": "You have {left} invites left. Remove someone to continue.",
+      "capacity_full": "The venue is full. No more invites can go out.",
+      "continue_many": "Write their invites",
+      "add_row": "Add someone else",
+      "remove_row": "Remove",
+      "guest_label": "Guest {n}",
+      "inviting_as": "Inviting as {member}.",
+      "ready_title": "Your invites are ready",
+      "ready_help": "Send each one from your own WhatsApp. Every message carries its own link and key.",
+      "all_sent": "All sent. Each envelope opens only for the number you entered.",
+      "writing": "Writing their invites"
     },
     "status": {
       "sent": "Sent",
@@ -445,7 +460,10 @@
       "checked_in": "{n} of {total} inside",
       "inside": "Inside",
       "camera_unavailable": "This browser can't scan. Type the code under the QR instead.",
-      "camera_stop": "Stop scanning"
+      "camera_stop": "Stop scanning",
+      "offline": "Offline. Using the list saved on this phone.",
+      "queued": "Saved on this phone. It syncs when you're back online.",
+      "synced": "Back online. {n} check ins synced."
     },
     "board": {
       "title": "Most stubborn guests of {year}",

@@ -75,6 +75,11 @@
   --slate-700: #2A3B35;   /* inactive bank card */
   --slate-900: #1A2723;
 
+  --tired-bg: #DAD5CB;    /* the No button when it is tired */
+  --tired-ink: #6B665D;
+  --tired-line: #A39D92;
+  --sweat: #8FC7E8;       /* the sweat drop, and nothing else */
+
   --error-on-dark: #F0A097;  /* readable error text on green */
   --scrim: rgba(4, 12, 9, 0.66);
 
@@ -84,6 +89,10 @@
   --wa-meta: #8696A0;
   --wa-link: #53BDEB;
   --wa-card: #025144;
+  --wa-top: #1F2C34;
+  --wa-avatar: #6B7C85;
+  --wa-og-text: #B6C6C1;
+  --wa-og-meta: #8FA9A1;
 
   --noise: url("/noise.png");  /* paper grain, 140px tile */
 

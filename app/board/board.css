@@ -1,0 +1,27 @@
+/* Resistance Board: a TV in landscape at the party. Big, legible from across the room. Ported from ui/board.html. */
+.board-root { min-height: 100dvh; overflow-x: hidden; }
+html:has(.board-root) { background-color: var(--green-900); }
+.board { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; gap: clamp(20px, 3vh, 40px); padding: clamp(24px, 5vh, 64px) clamp(20px, 6vw, 96px); }
+.b-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.b-head h1 { font-size: clamp(36px, 5.4vw, 84px); line-height: 1; margin-top: 14px; }
+.b-head p.sub { margin: 12px 0 0; font-family: var(--font-display); font-style: italic; font-size: clamp(18px, 1.8vw, 28px); color: var(--mist-400); }
+.b-head .seal-mini { width: clamp(64px, 7vw, 110px); height: clamp(64px, 7vw, 110px); }
+.b-head .seal-mini b { font-size: clamp(24px, 2.6vw, 40px); }
+.rows-b { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(8px, 1.2vh, 14px); align-content: start; }
+.r { display: grid; grid-template-columns: clamp(48px, 5vw, 84px) minmax(140px, 0.9fr) 2fr clamp(90px, 9vw, 150px); gap: clamp(12px, 2vw, 28px); align-items: center; padding: clamp(10px, 1.4vh, 16px) clamp(14px, 1.6vw, 24px); border-radius: var(--radius-md); background: rgba(22, 58, 47, 0.55); box-shadow: inset 0 0 0 1px rgba(31, 77, 63, 0.9); animation: r-in 500ms var(--ease-out) backwards; }
+.r .rank { font-family: var(--font-display); font-size: clamp(26px, 2.8vw, 46px); font-weight: 600; color: var(--gold-400); text-align: center; font-variant-numeric: lining-nums; }
+.r .nm { font-family: var(--font-display); font-size: clamp(22px, 2.4vw, 40px); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r .bar { height: clamp(10px, 1.2vh, 16px); border-radius: 999px; background: rgba(31, 77, 63, 0.9); overflow: hidden; }
+.r .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--foil-dark), var(--gold-400) 60%, var(--foil-light)); transform-origin: 0 50%; }
+.r .n { text-align: right; font-size: clamp(16px, 1.5vw, 24px); color: var(--mist-400); font-variant-numeric: tabular-nums; }
+.r .n b { font-family: var(--font-display); font-size: clamp(26px, 2.6vw, 44px); font-weight: 600; color: var(--mist-100); margin-right: 6px; }
+.r.first { background: radial-gradient(120% 140% at 0% 0%, rgba(200, 162, 74, 0.22), rgba(22, 58, 47, 0.7) 60%); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.6), 0 20px 40px -24px rgba(0, 0, 0, 0.7); }
+.r.first .nm { background: linear-gradient(100deg, var(--foil-dark), var(--foil-light) 40%, var(--gold-500) 60%, var(--foil-dark)); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 600; }
+.b-foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--mist-400); font-size: clamp(13px, 1vw, 16px); }
+.gate { min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 20px; text-align: center; padding: 24px; }
+.gate .envelope { width: min(280px, 70vw); }
+.gate h1 { font-size: 34px; }
+.empty-b { display: grid; place-items: center; gap: 12px; padding: 60px 0; text-align: center; color: var(--mist-400); font-family: var(--font-display); font-size: 24px; }
+@keyframes r-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .r { grid-template-columns: 40px 1fr auto; } .r .bar { display: none; } }
+@media (prefers-reduced-motion: reduce) { .r { animation: none; } }

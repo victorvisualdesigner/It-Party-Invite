@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Guest page assets carry a content hash in their name, so they never change.
+        source: "/g/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
         source: "/:path*",
         headers: [
           // Nothing here is ever meant to be found by a search engine.

@@ -164,3 +164,29 @@ export function parseSlotLimit(value: unknown): { ok: true; value: number | null
   const n = typeof value === "number" ? value : wholeNumber(String(value ?? ""), 0, 500);
   return n != null && Number.isInteger(n) && n >= 0 && n <= 500 ? { ok: true, value: n } : { ok: false };
 }
+
+/* ---------- Guests to invite ---------- */
+
+export const MAX_GUESTS_PER_BATCH = 20;
+
+export const guestRowsSchema = z
+  .array(z.object({ first_name: text(200), phone: text(40) }))
+  .min(1)
+  .max(MAX_GUESTS_PER_BATCH);
+export type GuestRowsInput = z.infer<typeof guestRowsSchema>;
+
+/** Field errors are keyed rows.{i}.first_name and rows.{i}.phone. */
+export function parseGuestRows(raw: unknown): Parsed<{ first_name: string; phone_e164: string }[]> {
+  const shape = guestRowsSchema.safeParse(raw);
+  if (!shape.success) return { ok: false, errors: { form: t("member.new_invite.name_error") } };
+  const errors: FieldErrors = {};
+  const rows = shape.data.map((row, i) => {
+    const firstName = row.first_name.trim().replace(/\s+/g, " ");
+    if (!firstName || firstName.length > 40) errors[`rows.${i}.first_name`] = t("member.new_invite.name_error");
+    const phone = normalizePhone(row.phone);
+    if (!phone) errors[`rows.${i}.phone`] = t("member.new_invite.phone_error");
+    return { first_name: firstName, phone_e164: phone ?? "" };
+  });
+  if (Object.keys(errors).length) return { ok: false, errors };
+  return { ok: true, value: rows };
+}
