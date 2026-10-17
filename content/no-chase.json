@@ -1,0 +1,119 @@
+{
+  "_about": "The No button can never be pressed. Every tap draws a random move from the current tier. Moves inside a tier are shuffled and do not repeat until the tier runs dry, then the tier reshuffles. The deck gets wilder the longer the guest fights.",
+  "tiers": [
+    { "tier": 1, "from_tap": 1, "to_tap": 3 },
+    { "tier": 2, "from_tap": 4, "to_tap": 7 },
+    { "tier": 3, "from_tap": 8, "to_tap": null }
+  ],
+  "yes_growth": {
+    "per_tap_scale": 0.06,
+    "max_scale": 1.45,
+    "glow_from_tap": 3,
+    "note": "Yes grows a little with every No tap, up to the cap, so the whole screen leans one way."
+  },
+  "idle": {
+    "min_seconds": 4,
+    "max_seconds": 9,
+    "only_after_tap": 1,
+    "moves": ["fidget", "drift"],
+    "note": "After the first tap, if the screen sits still for a random 4 to 9 seconds, No sometimes fidgets or drifts on its own. Never before the first tap, so the screen looks normal at first glance."
+  },
+  "placement": {
+    "edge_margin_px": 16,
+    "avoid": ["the Yes button", "the point that was just tapped", "the card title"],
+    "never_offscreen_except": ["left_the_chat"]
+  },
+  "moves": [
+    {
+      "id": "hop", "tier": 1, "duration_ms": 280,
+      "does": "Jumps to a random safe spot with a small overshoot and settle."
+    },
+    {
+      "id": "shy", "tier": 1, "duration_ms": 900,
+      "does": "Shrinks to half size on the spot, then slowly grows back."
+    },
+    {
+      "id": "slide", "tier": 1, "duration_ms": 420,
+      "does": "Scoots along to the nearest screen edge as if escaping, then rests there."
+    },
+    {
+      "id": "wink", "tier": 1, "duration_ms": 1100,
+      "does": "Its label flips to Yes for about a second, then back to No."
+    },
+    {
+      "id": "hide", "tier": 2, "duration_ms": 600,
+      "does": "Ducks behind the Yes button, then peeks out from one side."
+    },
+    {
+      "id": "decoy", "tier": 2, "duration_ms": 1600,
+      "does": "Splits into three tiny buttons that each say Wrong one, then they merge back into No at a new spot."
+    },
+    {
+      "id": "loading", "tier": 2, "duration_ms": 1800,
+      "does": "Label becomes Processing your No..., then Error: No not found, then back to No."
+    },
+    {
+      "id": "gravity", "tier": 2, "duration_ms": 900,
+      "does": "Drops to the bottom of the card and bounces twice."
+    },
+    {
+      "id": "tired", "tier": 3, "duration_ms": 1600,
+      "does": "Turns grey, a small sweat drop appears, label reads Abeg, I'm tired, then it recovers."
+    },
+    {
+      "id": "earthquake", "tier": 3, "duration_ms": 1200,
+      "does": "The whole card shakes, No falls off the bottom edge and climbs back up from below."
+    },
+    {
+      "id": "stamp", "tier": 3, "duration_ms": 1300,
+      "does": "A gold YES stamp slams down on top of No, then lifts away."
+    },
+    {
+      "id": "left_the_chat", "tier": 3, "duration_ms": 1500,
+      "does": "No walks off screen. A small system line reads No has left the chat. After 3 to 6 seconds it returns, or on the next tap it reappears somewhere new.",
+      "max_per_session": 2
+    }
+  ],
+  "lines": {
+    "_about": "One line appears under the buttons after each tap, drawn at random without repeating the last three.",
+    "start": "So, are you coming?",
+    "tier_1": [
+      "Hmm. Try that again.",
+      "Interesting choice.",
+      "Are you sure that's the button you wanted?",
+      "Be serious abeg."
+    ],
+    "tier_2": [
+      "Everybody wey matter go dey there.",
+      "You wan make we cry?",
+      "Who sent you?",
+      "We can do this all day.",
+      "The Yes button is right there, you know."
+    ],
+    "tier_3": [
+      "Na only Yes dey this menu.",
+      "No has filed a complaint.",
+      "At this point, it's a sport.",
+      "You're on the Resistance Board now.",
+      "Respect. But still, no."
+    ]
+  },
+  "haptics": {
+    "pattern_ms": [18],
+    "tier_3_pattern_ms": [20, 40, 20],
+    "note": "navigator.vibrate where supported. Silent on iPhone, which is fine."
+  },
+  "reduced_motion": {
+    "behaviour": "No stays in place. Each tap only swaps its label and the line under the buttons.",
+    "labels": ["No?", "Not that one", "Still no", "Try Yes", "No is resting", "Only Yes"]
+  },
+  "screen_reader": {
+    "no_label": "No",
+    "on_activate_announce": "Nice try. Only Yes is available."
+  },
+  "tracking": {
+    "store": "no_taps on the invite, incremented on the server (debounced, at most one write per 400 ms, batched)",
+    "survives_refresh": true,
+    "feeds": ["Member app status", "Admin guest list", "Resistance Board"]
+  }
+}

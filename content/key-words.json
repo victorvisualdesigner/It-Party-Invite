@@ -1,0 +1,21 @@
+{
+  "_about": "Access keys are one word from this list plus four digits, e.g. VELVET 4827. Digits are drawn from 2 to 9 only, so 0 and 1 never get confused with O and I. 40 words x 8^4 digit combinations = 163,840 possible keys.",
+  "format": "{WORD} {DDDD}",
+  "digits_allowed": "23456789",
+  "input_rules": [
+    "Accept any case: velvet 4827, Velvet4827 and VELVET 4827 all match.",
+    "Ignore spaces, dashes and dots when comparing.",
+    "Store only a hash of the normalized key (uppercase, no spaces). Show the plain key to the inviter at creation and in the message, never again after that.",
+    "A resend or Reset access generates a new key and invalidates the old one."
+  ],
+  "words": [
+    "VELVET", "AMBER", "GILDED", "LANTERN", "MIDNIGHT",
+    "SATIN", "EMBER", "CROWN", "HARBOUR", "MARBLE",
+    "CANDLE", "SAFFRON", "COPPER", "TIDES", "ORCHID",
+    "RAVEN", "CHAMPAGNE", "SAPPHIRE", "CEDAR", "MONARCH",
+    "PEARL", "TEMPO", "SILHOUETTE", "SOLSTICE", "BRASS",
+    "COBALT", "JASMINE", "HALO", "VERANDA", "ENCORE",
+    "CRESCENT", "TAFFETA", "NECTAR", "GARNET", "SERENADE",
+    "IVORY", "TWILIGHT", "BALLAD", "FIRELIGHT", "OPAL"
+  ]
+}

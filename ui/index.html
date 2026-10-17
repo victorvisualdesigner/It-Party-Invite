@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0F2A22">
+<title>Only Yes Design Build</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="../design/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
+<style>
+/* The front door to the design build: what exists, how to walk it, and the materials it is made of. */
+body { overflow-x: hidden; }
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)); }
+.hero { display: grid; justify-items: center; text-align: center; gap: 20px; padding: clamp(56px, 10vh, 110px) 0 clamp(40px, 7vh, 72px); }
+.hero .envelope { width: min(320px, 78vw); margin-bottom: 8px; }
+.hero h1 { font-size: clamp(56px, 10vw, 112px); line-height: 0.95; letter-spacing: -0.03em; background: linear-gradient(100deg, var(--foil-dark), var(--foil-light) 38%, var(--gold-500) 58%, #EAD49A 76%, var(--foil-dark)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .lede { margin: 0; max-width: 54ch; color: var(--mist-400); font-size: 18px; text-wrap: pretty; }
+.doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.door {
+  position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; padding: 22px; border-radius: var(--radius-lg); text-decoration: none; color: var(--mist-100);
+  background: radial-gradient(140% 100% at 100% 0%, rgba(36, 84, 63, 0.9) 0%, var(--green-800) 45%, var(--green-900) 100%);
+  box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.28), var(--shadow-card); transition: transform var(--dur-fast) var(--ease-out);
+}
+.door:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.6), var(--shadow-card); }
+.door .art { height: 96px; display: grid; place-items: center start; }
+.door .art .envelope { width: 130px; }
+.door .art .ico { width: 44px; height: 44px; color: var(--gold-400); }
+.door h2 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 26px; line-height: 1.1; }
+.door p { margin: 0; color: var(--mist-400); font-size: 15px; }
+.door .creds { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; background: rgba(10, 29, 23, 0.55); font-size: 13px; color: var(--mist-400); }
+.door .creds code { font-family: ui-monospace, Menlo, monospace; color: var(--gold-300); letter-spacing: 0.04em; }
+.door .go { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--weight-ui-strong); color: var(--gold-300); font-size: 15px; }
+.door .go .ico { width: 18px; height: 18px; }
+.mock-phone { width: 62px; height: 92px; border-radius: 12px; box-shadow: inset 0 0 0 2px rgba(200, 162, 74, 0.6); display: grid; align-content: center; justify-items: center; gap: 6px; }
+.mock-phone i { width: 34px; height: 6px; border-radius: 3px; background: rgba(200, 162, 74, 0.5); }
+.mock-phone i:first-child { width: 24px; height: 24px; border-radius: 50%; background: var(--seal-600); }
+.mock-ledger { width: 120px; display: grid; gap: 7px; }
+.mock-ledger i { height: 9px; border-radius: 4px; background: var(--cream-100); opacity: 0.85; }
+.mock-ledger i:nth-child(2) { width: 80%; opacity: 0.5; }
+.mock-ledger i:nth-child(3) { width: 92%; background: var(--gold-500); }
+.mock-ledger i:nth-child(4) { width: 60%; opacity: 0.4; }
+.mock-bars { width: 130px; display: grid; gap: 7px; }
+.mock-bars i { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--foil-dark), var(--gold-400)); }
+.section { padding: clamp(48px, 8vh, 80px) 0 0; }
+.section > h2 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: clamp(28px, 3.4vw, 38px); }
+.section > p { margin: 0 0 24px; color: var(--mist-400); max-width: 60ch; }
+.steps-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; counter-reset: s; }
+.steps-l li { counter-increment: s; position: relative; padding: 18px 18px 18px 64px; border-radius: var(--radius-md); background: rgba(22, 58, 47, 0.55); box-shadow: inset 0 0 0 1px rgba(31, 77, 63, 0.9); font-size: 15px; color: var(--mist-100); }
+.steps-l li::before { content: counter(s); position: absolute; left: 18px; top: 16px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; color: var(--ink-900); background: linear-gradient(180deg, var(--gold-400), var(--gold-500)); }
+.steps-l li small { display: block; margin-top: 4px; color: var(--mist-400); font-size: 13px; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.sw { border-radius: var(--radius-md); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); background: var(--green-800); }
+.sw .chip-c { height: 96px; }
+.sw div:last-child { padding: 12px 14px; font-size: 13px; color: var(--mist-400); }
+.sw b { display: block; color: var(--mist-100); font-size: 15px; font-weight: var(--weight-ui-strong); }
+.sw code { font-family: ui-monospace, Menlo, monospace; color: var(--gold-300); }
+.type { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 14px; }
+.type > div { padding: 22px; border-radius: var(--radius-md); background: var(--cream-100); color: var(--ink-900); background-image: var(--noise, none); }
+.type .big { font-family: var(--font-display); font-size: 46px; font-weight: 600; line-height: 1; }
+.type .big.sans { font-family: var(--font-ui); font-weight: 600; font-size: 40px; letter-spacing: -0.02em; }
+.type p { margin: 10px 0 0; color: var(--ink-600); font-size: 14px; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.note-c { padding: 18px 20px; border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px rgba(31, 77, 63, 0.9); }
+.note-c b { display: block; font-family: var(--font-display); font-weight: 500; font-size: 19px; margin-bottom: 6px; color: var(--gold-300); }
+.note-c p { margin: 0; color: var(--mist-400); font-size: 14.5px; }
+footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 56px 0 48px; color: var(--mist-400); font-size: 14px; }
+</style>
+</head>
+<body class="surface-dark bg-club">
+<div class="wrap">
+  <header class="hero">
+    <div id="hero-env"></div>
+    <p class="eyebrow">The December Invite &middot; Design build</p>
+    <h1 class="display">Only Yes</h1>
+    <p class="lede">One product, three doors. Every screen here is clickable, and they all share one set of demo data, so what you do in one shows up in the others.</p>
+  </header>
+
+  <section class="doors" aria-label="Interfaces">
+    <a class="door" href="guest.html?t=q3VxL9aTn2KwPz8RmB4sJd">
+      <span class="art" id="art-guest"></span>
+      <h2>Guest page</h2>
+      <p>The hero. Break the seal, fight the No button, transfer, and watch the card turn over.</p>
+      <span class="creds">Ada, invited by Tolu<span>Number <code>0803 123 4234</code></span><span>Key <code>VELVET 4827</code></span></span>
+      <span class="go">Open the envelope <span id="i1"></span></span>
+    </a>
+    <a class="door" href="member.html">
+      <span class="art"><span class="mock-phone" aria-hidden="true"><i></i><i></i><i></i></span></span>
+      <h2>Member app</h2>
+      <p>Slots, the invite composer with Shuffle and a live WhatsApp preview, and every guest's journey.</p>
+      <span class="creds">Tolu, 5 slots<span>Number <code>0803 111 0001</code></span><span>Key <code>LANTERN 5372</code></span></span>
+      <span class="go">Open the app <span id="i2"></span></span>
+    </a>
+    <a class="door" href="admin.html">
+      <span class="art"><span class="mock-ledger" aria-hidden="true"><i></i><i></i><i></i><i></i></span></span>
+      <h2>Admin portal</h2>
+      <p>Confirm transfers, set reveals, manage members and slots, and run the door.</p>
+      <span class="creds">Host access<span>Any email and password works in the prototype.</span></span>
+      <span class="go">Open the portal <span id="i3"></span></span>
+    </a>
+    <a class="door" href="board.html" target="_blank" rel="noopener">
+      <span class="art"><span class="mock-bars" aria-hidden="true"><i style="width:100%"></i><i style="width:78%"></i><i style="width:56%"></i><i style="width:40%"></i></span></span>
+      <h2>Resistance Board</h2>
+      <p>The most stubborn guests of the year, live on the TV at the party.</p>
+      <span class="creds">Sign in to the Admin portal first.</span>
+      <span class="go">Open the board <span id="i4"></span></span>
+    </a>
+  </section>
+
+  <section class="section">
+    <h2>Walk the whole loop</h2>
+    <p>Open the Guest page and the Admin portal side by side. The card turns over the moment the host confirms.</p>
+    <ol class="steps-l">
+      <li>Tolu sends an invite<small>Member app. Shuffle until it sounds right, then send on WhatsApp.</small></li>
+      <li>The guest breaks the seal<small>Their number and key, nothing else. A forwarded link stays locked.</small></li>
+      <li>No is a fight they lose<small>Twelve moves in three tiers. Yes grows with every tap.</small></li>
+      <li>Yes, then a calm transfer<small>Exact amount, reference, account. Copy buttons for each.</small></li>
+      <li>The host confirms<small>Payments to confirm. Confetti and the card turns over on the guest's phone.</small></li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <h2>What it's made of</h2>
+    <p>An old private members' club, not another black and gold flyer. The motion carries the personality, so the surfaces stay quiet.</p>
+    <div class="swatches">
+      <div class="sw"><div class="chip-c" style="background:var(--green-900)"></div><div><b>Bottle green</b><code>#0F2A22</code> Every screen behind the envelope</div></div>
+      <div class="sw"><div class="chip-c" style="background:linear-gradient(100deg,var(--foil-dark),var(--foil-light) 40%,var(--gold-500) 60%,var(--foil-dark))"></div><div><b>Antique gold</b><code>#C8A24A</code> Yes, foil text, confetti</div></div>
+      <div class="sw"><div class="chip-c" style="background:var(--cream-100);background-image:var(--noise)"></div><div><b>Warm cream</b><code>#F3ECDF</code> Envelope and invite card</div></div>
+      <div class="sw"><div class="chip-c" style="background:radial-gradient(circle at 34% 30%,var(--wax-light),var(--seal-600) 55%,var(--wax-dark))"></div><div><b>Wax red</b><code>#8E1B1B</code> The seal, and nothing else</div></div>
+    </div>
+    <div class="type">
+      <div><span class="big">Fraunces</span><p>Names, headlines and the card. The naira sign renders: &#8358;50,000</p></div>
+      <div><span class="big sans">Inter</span><p>Buttons, labels and details. Calm at small sizes, tabular for money.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Decisions worth knowing</h2>
+    <p>Small things a guest will never notice, which is the point.</p>
+    <div class="notes">
+      <div class="note-c"><b>Paste the whole message</b><p>The key field pulls VELVET 4827 out of anything pasted, even the full WhatsApp text.</p></div>
+      <div class="note-c"><b>Nothing leaks before the key</b><p>The letter inside the lock screen envelope stays blank. The guest's name appears only after the seal breaks.</p></div>
+      <div class="note-c"><b>The preview is the first screen</b><p>Members see exactly what lands in the chat: the sealed envelope card, the message, the link and the key.</p></div>
+      <div class="note-c"><b>No spinners at the till</b><p>Waiting is a glowing envelope and a recap of the reference, so guests know they did it right.</p></div>
+      <div class="note-c"><b>Animations never hold the page</b><p>Every sequence finishes on a deadline and a tap skips it, so a busy phone never gets stuck mid seal.</p></div>
+      <div class="note-c"><b>Bank apps hate symbols</b><p>Copy gives 50000, not &#8358;50,000, and account numbers without spaces.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Prototype data lives in this browser only. Nothing is sent anywhere.</span>
+    <button class="btn btn-ghost btn-sm" type="button" id="reset">Reset the demo</button>
+  </footer>
+</div>
+<script src="assets/content.js"></script>
+<script src="assets/kit.js"></script>
+<script src="assets/store.js"></script>
+<script>
+(function () {
+  var K = OYKit;
+  document.getElementById("hero-env").innerHTML = K.envelopeHTML({ glow: true, mark: K.t("guest.lock.envelope_mark") });
+  document.getElementById("art-guest").innerHTML = K.envelopeHTML({});
+  ["i1", "i2", "i3", "i4"].forEach(function (id) { document.getElementById(id).outerHTML = K.icon("chev"); });
+  if (!K.reduced) {
+    var env = document.querySelector("#hero-env .envelope");
+    K.anim(env, [{ opacity: 0, transform: "translateY(40px)" }, { opacity: 1, transform: "none" }], { duration: 600, easing: K.EASE.out });
+    setTimeout(function () { var s = env.querySelector(".seal"); s.classList.add("shining"); setTimeout(function () { s.classList.remove("shining"); }, 1000); }, 650);
+  }
+  document.getElementById("reset").addEventListener("click", function () { OY.reset(); K.toast("Fresh demo data. Ada's envelope is sealed again."); });
+})();
+</script>
+</body>
+</html>

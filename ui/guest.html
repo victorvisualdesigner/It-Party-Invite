@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0F2A22">
+<title>For your eyes only</title>
+<meta property="og:title" content="For your eyes only">
+<meta property="og:description" content="A sealed invitation. It opens for one person.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="../design/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/guest.css">
+</head>
+<body class="surface-dark bg-club">
+<div class="motes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+<main class="app">
+
+  <!-- Lock -->
+  <section class="screen" id="s-lock" hidden aria-labelledby="lock-title">
+    <p class="eyebrow" data-fade data-t="guest.lock.eyebrow"></p>
+    <div class="env-mount" id="env-lock"></div>
+    <h1 class="display" id="lock-title" data-fade data-t="guest.lock.title"></h1>
+    <p class="masked" data-fade id="lock-masked"></p>
+    <form class="lock-form" id="lock-form" novalidate data-fade>
+      <div class="field">
+        <label for="phone" data-t="guest.lock.phone_label"></label>
+        <input class="input num" id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required>
+      </div>
+      <div class="field">
+        <label for="key" data-t="guest.lock.key_label"></label>
+        <input class="input input-key" id="key" name="key" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-describedby="key-help">
+        <span class="help" id="key-help" data-t="guest.lock.key_help"></span>
+      </div>
+      <p class="error" id="lock-error" role="alert" hidden></p>
+      <button class="btn btn-gold btn-wide" id="unlock" type="submit" data-t="guest.lock.submit"></button>
+    </form>
+  </section>
+
+  <!-- Resting after too many tries -->
+  <section class="screen" id="s-rest" hidden aria-labelledby="rest-title">
+    <div class="env-mount" id="env-rest"></div>
+    <h1 class="display" id="rest-title" data-t="guest.lock.rest_title"></h1>
+    <p class="lede" id="rest-body"></p>
+  </section>
+
+  <!-- Stranger, invalid link -->
+  <section class="screen" id="s-stranger" hidden aria-labelledby="stranger-title">
+    <p class="eyebrow" data-t="guest.lock.eyebrow"></p>
+    <div class="env-mount" id="env-stranger"></div>
+    <h1 class="display" id="stranger-title" data-t="guest.stranger.title"></h1>
+    <p class="lede" data-t="guest.stranger.body"></p>
+  </section>
+
+  <!-- Already opened on another phone -->
+  <section class="screen" id="s-claimed" hidden aria-labelledby="claimed-title">
+    <div class="env-mount" id="env-claimed"></div>
+    <h1 class="display" id="claimed-title" data-t="guest.stranger.claimed_title"></h1>
+    <p class="lede" data-t="guest.stranger.already_claimed"></p>
+  </section>
+
+  <!-- Card and question -->
+  <section class="screen" id="s-card" hidden aria-labelledby="card-headline">
+    <article class="invite" id="invite">
+      <svg class="corner tl" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M2 24V8a6 6 0 0 1 6-6h16"/><path d="M6 24V11a5 5 0 0 1 5-5h13"/><circle cx="6" cy="6" r="1.4" fill="currentColor" stroke="none"/></svg>
+      <svg class="corner tr" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M2 24V8a6 6 0 0 1 6-6h16"/><path d="M6 24V11a5 5 0 0 1 5-5h13"/><circle cx="6" cy="6" r="1.4" fill="currentColor" stroke="none"/></svg>
+      <svg class="corner bl" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M2 24V8a6 6 0 0 1 6-6h16"/><path d="M6 24V11a5 5 0 0 1 5-5h13"/><circle cx="6" cy="6" r="1.4" fill="currentColor" stroke="none"/></svg>
+      <svg class="corner br" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M2 24V8a6 6 0 0 1 6-6h16"/><path d="M6 24V11a5 5 0 0 1 5-5h13"/><circle cx="6" cy="6" r="1.4" fill="currentColor" stroke="none"/></svg>
+      <p class="card-eyebrow" id="card-event"></p>
+      <p class="salute" id="salute"></p>
+      <h2 class="display headline" id="card-headline"></h2>
+      <dl class="details" id="card-details"></dl>
+      <div class="question">
+        <span class="orn" aria-hidden="true"></span>
+        <p class="q" data-t="guest.card.question"></p>
+        <div class="choices">
+          <button class="btn-yes" id="yes" type="button" data-t="guest.card.yes"></button>
+          <span id="no-slot"><button class="btn-no" id="no" type="button" aria-describedby="chase-line"><span class="lbl" data-t="guest.card.no"></span></button></span>
+        </div>
+        <p class="chase-line" id="chase-line" aria-live="polite"></p>
+        <p class="later-note" id="later-note" hidden></p>
+      </div>
+    </article>
+  </section>
+
+  <!-- Awaiting confirmation -->
+  <section class="screen" id="s-wait" hidden aria-labelledby="wait-title">
+    <div class="env-mount" id="env-wait"></div>
+    <h1 class="display" id="wait-title"></h1>
+    <p class="lede" id="wait-body"></p>
+    <p class="recap" id="wait-recap" hidden></p>
+    <p class="small" data-t="guest.awaiting.small"></p>
+    <div class="demo" id="wait-demo">
+      <p>Prototype: act as the host</p>
+      <button class="btn btn-gold" type="button" id="demo-confirm">Confirm the payment</button>
+      <button class="btn btn-ghost" type="button" id="demo-notfound">Mark it not found</button>
+    </div>
+  </section>
+
+  <!-- Not found -->
+  <section class="screen" id="s-notfound" hidden aria-labelledby="nf-title">
+    <div class="env-mount" id="env-notfound"></div>
+    <h1 class="display" id="nf-title" data-t="guest.not_found.title"></h1>
+    <p class="lede" id="nf-body"></p>
+    <button class="btn btn-gold btn-wide" type="button" id="nf-retry" data-t="guest.not_found.retry"></button>
+    <button class="btn btn-ghost btn-wide" type="button" id="nf-details" data-t="guest.not_found.details"></button>
+  </section>
+
+  <!-- Covered -->
+  <section class="screen" id="s-covered" hidden aria-labelledby="cov-title">
+    <div class="env-mount" id="env-covered"></div>
+    <h1 class="display" id="cov-title" data-t="guest.covered.title"></h1>
+    <p class="lede" id="cov-body"></p>
+    <button class="btn btn-gold btn-wide" type="button" id="cov-open" data-t="guest.covered.continue"></button>
+  </section>
+
+  <!-- The premium card -->
+  <section class="screen" id="s-ticket" hidden aria-labelledby="t-name">
+    <div class="ticket-scene" id="ticket-scene">
+      <div class="ticket" id="ticket">
+        <div class="t-face t-back" aria-hidden="true"><div id="t-seal"></div><p id="t-back-to"></p></div>
+        <div class="t-face t-front">
+          <span class="foil-sweep" id="foil" aria-hidden="true"></span>
+          <div class="t-main">
+            <div class="t-top"><span id="t-event"></span><span data-t="guest.ticket.admits"></span></div>
+            <h1 class="t-name" id="t-name"></h1>
+            <p class="t-by" id="t-by"></p>
+            <dl class="t-details" id="t-details"></dl>
+          </div>
+          <div class="t-perf" aria-hidden="true"></div>
+          <div class="t-stub">
+            <div class="qr" id="qr" role="img" aria-label="Ticket QR code"></div>
+            <p><strong data-t="guest.ticket.qr_caption"></strong><span data-t="guest.ticket.qr_note"></span><span class="t-code" id="t-code"></span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="nocount" id="nocount"></p>
+    <div class="ticket-actions">
+      <button class="btn btn-ghost" type="button" id="save-card"></button>
+      <button class="btn btn-ghost" type="button" id="add-cal"></button>
+    </div>
+    <label class="switch panel-switch" for="board"><span data-t="guest.ticket.board_toggle"></span><input type="checkbox" id="board"></label>
+  </section>
+
+  <!-- Closing states -->
+  <section class="screen" id="s-ended" hidden aria-labelledby="ended-title">
+    <div class="env-mount" id="env-ended"></div>
+    <h1 class="display" id="ended-title"></h1>
+    <p class="lede" id="ended-body"></p>
+  </section>
+
+  <p class="inapp" id="inapp" hidden><span data-t="guest.in_app_browser.hint"></span>. <a href="#" id="inapp-open" data-t="guest.in_app_browser.button"></a></p>
+</main>
+
+<!-- Transfer sheet -->
+<div class="overlay sheet-root" id="sheet" hidden>
+  <div class="scrim" id="scrim"></div>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 id="sheet-title" tabindex="-1" data-t="guest.transfer.title"></h2>
+      <span class="held" id="held"></span>
+    </div>
+    <p class="intro" data-t="guest.transfer.intro"></p>
+    <ol class="steps" id="steps"></ol>
+    <div class="rows" id="rows"></div>
+    <p class="note" id="hold-line"></p>
+    <p class="refund" id="refund"></p>
+    <div id="sent-step" hidden>
+      <div class="field">
+        <label for="sender" data-t="guest.transfer.sender_name_label"></label>
+        <input class="input" id="sender" type="text" autocomplete="name">
+        <span class="help" data-t="guest.transfer.sender_name_help"></span>
+      </div>
+      <p class="error" id="sender-error" role="alert" hidden data-t="guest.transfer.sender_name_error"></p>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-gold" type="button" id="btn-sent"></button>
+      <button class="btn btn-ghost" type="button" id="btn-later" data-t="guest.transfer.not_now"></button>
+    </div>
+  </section>
+</div>
+
+<!-- Prototype controls -->
+<div class="proto">
+  <button class="proto-btn" id="proto-btn" type="button" aria-expanded="false" aria-controls="proto-panel">Prototype</button>
+  <div class="proto-panel" id="proto-panel" hidden></div>
+</div>
+
+<p class="sr" id="sr-live" aria-live="assertive"></p>
+<canvas id="confetti" hidden></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="assets/content.js"></script>
+<script src="assets/kit.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/guest.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+/*
+  Design tokens for the invite product.
+  Mood: an old private members' club. Bottle green, antique gold, warm cream paper, one wax red seal.
+  Fonts: Fraunces (display serif) and Inter (UI sans), both on Google Fonts. Load 2 weights each.
+  Check that the naira sign renders in both fonts before shipping.
+*/
+
+:root {
+  /* Colour */
+  --green-950: #0A1D17;   /* deepest background, behind everything */
+  --green-900: #0F2A22;   /* main background */
+  --green-800: #163A2F;   /* raised surfaces on dark */
+  --green-700: #1F4D3F;   /* borders on dark */
+
+  --gold-500: #C8A24A;    /* antique gold: Yes, foil text, confetti */
+  --gold-400: #D9B866;    /* hover and glow */
+  --gold-300: #E8D193;    /* highlights on foil */
+  --gold-700: #8F7230;    /* gold text on cream (AA on cream) */
+
+  --cream-50: #FBF7EF;    /* lightest paper */
+  --cream-100: #F3ECDF;   /* envelope and card paper */
+  --cream-200: #E7DCC8;   /* paper edges and dividers */
+
+  --ink-900: #1C1A16;     /* text on cream */
+  --ink-600: #5B5446;     /* quiet text on cream */
+  --mist-100: #E9EFEB;    /* text on green */
+  --mist-400: #9DB2A8;    /* quiet text on green */
+
+  --seal-600: #8E1B1B;    /* wax seal, and nothing else */
+  --seal-500: #A52626;    /* seal highlight */
+
+  --danger: #C2554A;      /* errors on dark, used sparingly */
+  --success: var(--gold-500);  /* success is gold, never green on green */
+
+  /* Promoted from the design build (ui/assets/base.css and admin.css) */
+  --green-600: #24543F;   /* lit corner of hero cards and bank cards */
+  --green-650: #1C4537;   /* glow at the top of the club backdrop */
+  --green-680: #1E4436;   /* reference row, light end */
+  --green-850: #1A3B2F;   /* reference row, dark end */
+  --gold-600: #B8913D;    /* bottom of the gold button */
+  --foil-dark: #A57F2C;   /* foil gradient stops */
+  --foil-light: #F2DFA4;
+
+  --paper-white: #FFFCF6; /* raised paper on cream (admin cards) */
+  --paper-edge: #D9CDB6;  /* envelope shading */
+  --paper-deep: #CDBEA2;  /* envelope back */
+  --paper-back: #D7CAB0;
+  --paper-fold-1: #EFE6D5;
+  --paper-fold-2: #E6DAC4;
+  --paper-fold-3: #E4D7BF;
+  --paper-fold-4: #F7F1E6;
+  --paper-fold-5: #ECE2CF;
+  --paper-flap-1: #F3EBDC;
+  --paper-flap-2: #E3D5BC;
+  --paper-card-edge: #ECE1CD;
+
+  --wax-dark: #651010;    /* seal shadow side */
+  --wax-light: #BF3A3A;   /* seal highlight */
+
+  --honey-50: #FFF8E6;    /* warm notes on cream: warnings, keys, awaiting */
+  --honey-100: #FBF0D2;
+  --honey-150: #F7EED6;
+  --honey-200: #F5E6B8;
+  --honey-250: #E9D7A8;
+  --honey-300: #E2C877;
+  --honey-800: #7A5A12;
+  --honey-900: #5C4410;
+
+  --rose-50: #F6E4E1;     /* errors and cancels on cream */
+  --rose-200: #E9C4BE;
+  --sage-50: #E5EEE9;     /* opened chip on cream */
+  --sage-200: #CFDDD5;
+  --sage-500: #6F8A7F;    /* struck through chips on green */
+  --stone-500: #9A917F;   /* struck through chips on cream */
+  --slate-700: #2A3B35;   /* inactive bank card */
+  --slate-900: #1A2723;
+
+  --error-on-dark: #F0A097;  /* readable error text on green */
+  --scrim: rgba(4, 12, 9, 0.66);
+
+  --wa-chat: #0B141A;     /* WhatsApp preview, dark chat */
+  --wa-bubble: #005C4B;
+  --wa-text: #E9EDEF;
+  --wa-meta: #8696A0;
+  --wa-link: #53BDEB;
+  --wa-card: #025144;
+
+  --noise: url("/noise.png");  /* paper grain, 140px tile */
+
+  /* Type. The app loads the fonts with next/font, which sets the --font-*-face variables. */
+  --font-display: var(--font-fraunces-face, "Fraunces"), "Georgia", serif;
+  --font-ui: var(--font-inter-face, "Inter"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;   /* minimum for inputs, stops iOS zoom */
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 36px;
+  --text-3xl: 44px;
+
+  --weight-ui: 450;
+  --weight-ui-strong: 600;
+  --weight-display: 500;
+  --weight-display-strong: 650;
+
+  --tracking-eyebrow: 0.18em;  /* uppercase eyebrows only */
+
+  /* Space, 4px base */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --tap-min: 48px;   /* minimum touch target */
+
+  /* Depth: soft and warm, never grey */
+  --shadow-card: 0 18px 40px -18px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-gold-glow: 0 0 0 1px rgba(200, 162, 74, 0.5), 0 8px 28px -6px rgba(200, 162, 74, 0.55);
+
+  /* Motion. Animate only transform and opacity. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);   /* overshoot for the No hop */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --dur-instant: 120ms;
+  --dur-fast: 250ms;
+  --dur-base: 400ms;
+  --dur-slow: 800ms;
+  --dur-reveal: 900ms;
+
+  /* Signature moments */
+  --dur-envelope-arrive: 600ms;
+  --dur-seal-crack: 800ms;
+  --dur-card-reveal: 900ms;
+  --dur-payment-land: 1500ms;
+  --dur-card-turn: 1000ms;
+  --confetti-max-pieces: 60;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-slow: 1ms;
+    --dur-reveal: 1ms;
+    --dur-envelope-arrive: 1ms;
+    --dur-seal-crack: 1ms;
+    --dur-card-reveal: 1ms;
+    --dur-payment-land: 1ms;
+    --dur-card-turn: 1ms;
+    --confetti-max-pieces: 0;
+  }
+}

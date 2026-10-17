@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Resistance Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="../design/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
+<style>
+/* Resistance Board: a TV in landscape at the party. Big, legible from across the room. */
+body { min-height: 100dvh; overflow-x: hidden; }
+.board { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; gap: clamp(20px, 3vh, 40px); padding: clamp(24px, 5vh, 64px) clamp(20px, 6vw, 96px); }
+.b-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.b-head h1 { font-size: clamp(36px, 5.4vw, 84px); line-height: 1; }
+.b-head p.sub { margin: 12px 0 0; font-family: var(--font-display); font-style: italic; font-size: clamp(18px, 1.8vw, 28px); color: var(--mist-400); }
+.b-head .seal-mini { width: clamp(64px, 7vw, 110px); height: clamp(64px, 7vw, 110px); }
+.b-head .seal-mini b { font-size: clamp(24px, 2.6vw, 40px); }
+.rows-b { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(8px, 1.2vh, 14px); align-content: start; }
+.r { display: grid; grid-template-columns: clamp(48px, 5vw, 84px) minmax(140px, 0.9fr) 2fr clamp(90px, 9vw, 150px); gap: clamp(12px, 2vw, 28px); align-items: center; padding: clamp(10px, 1.4vh, 16px) clamp(14px, 1.6vw, 24px); border-radius: var(--radius-md); background: rgba(22, 58, 47, 0.55); box-shadow: inset 0 0 0 1px rgba(31, 77, 63, 0.9); }
+.r .rank { font-family: var(--font-display); font-size: clamp(26px, 2.8vw, 46px); font-weight: 600; color: var(--gold-400); text-align: center; font-variant-numeric: lining-nums; }
+.r .nm { font-family: var(--font-display); font-size: clamp(22px, 2.4vw, 40px); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r .bar { height: clamp(10px, 1.2vh, 16px); border-radius: 999px; background: rgba(31, 77, 63, 0.9); overflow: hidden; }
+.r .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--foil-dark), var(--gold-400) 60%, var(--foil-light)); transform-origin: 0 50%; }
+.r .n { text-align: right; font-size: clamp(16px, 1.5vw, 24px); color: var(--mist-400); font-variant-numeric: tabular-nums; }
+.r .n b { font-family: var(--font-display); font-size: clamp(26px, 2.6vw, 44px); font-weight: 600; color: var(--mist-100); margin-right: 6px; }
+.r.first { background: radial-gradient(120% 140% at 0% 0%, rgba(200, 162, 74, 0.22), rgba(22, 58, 47, 0.7) 60%); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.6), 0 20px 40px -24px rgba(0, 0, 0, 0.7); }
+.r.first .nm { background: linear-gradient(100deg, var(--foil-dark), var(--foil-light) 40%, var(--gold-500) 60%, var(--foil-dark)); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 600; }
+.b-foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--mist-400); font-size: clamp(13px, 1vw, 16px); }
+.gate { min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 20px; text-align: center; padding: 24px; }
+.gate .envelope { width: min(280px, 70vw); }
+.empty-b { display: grid; place-items: center; gap: 12px; padding: 60px 0; text-align: center; color: var(--mist-400); font-family: var(--font-display); font-size: 24px; }
+@media (max-width: 640px) { .r { grid-template-columns: 40px 1fr auto; } .r .bar { display: none; } }
+</style>
+</head>
+<body class="surface-dark bg-club">
+<main id="board"></main>
+<script src="assets/content.js"></script>
+<script src="assets/kit.js"></script>
+<script src="assets/store.js"></script>
+<script>
+(function () {
+  "use strict";
+  var K = OYKit, t = K.t, esc = K.esc, el = document.getElementById("board"), seen = "";
+  function draw() {
+    if (!OY.session.admin()) {
+      el.innerHTML = '<div class="gate">' + K.envelopeHTML({ mark: t("guest.lock.envelope_mark") }) + '<h1 class="display" style="font-size:34px">' + esc(t("admin.login.title")) + '</h1><a class="btn btn-gold" href="admin.html">' + esc(t("admin.login.submit")) + "</a></div>";
+      return;
+    }
+    var e = OY.event(), rows = OY.board(), max = Math.max(1, rows.length ? rows[0].no_taps : 1);
+    var year = new Date(e.starts_at).getUTCFullYear();
+    var sig = rows.map(function (r) { return r.id + ":" + r.no_taps; }).join("|");
+    el.innerHTML = '<div class="board"><header class="b-head"><div><p class="eyebrow">' + esc(e.name) + '</p><h1 class="display" style="margin-top:14px">' + esc(t("admin.board.title", { year: year })) + '</h1><p class="sub">' + esc(t("admin.board.subtitle")) + "</p></div>" + K.miniSeal("OY") + "</header>" +
+      (rows.length ? '<ol class="rows-b">' + rows.map(function (r, i) {
+        var parts = t("admin.board.row", { guest: "\u0001", n: "\u0002" }).split(" · ");
+        var tapsLabel = (parts[1] || "{n} taps").replace("\u0002", "");
+        return '<li class="r' + (i === 0 ? " first" : "") + '"><span class="rank">' + (i + 1) + '</span><span class="nm">' + esc(r.guest_first_name) + '</span><span class="bar"><i style="transform:scaleX(' + (r.no_taps / max).toFixed(3) + ')"></i></span><span class="n"><b>' + r.no_taps + "</b>" + esc(tapsLabel.trim()) + "</span></li>";
+      }).join("") + "</ol>" : '<div class="empty-b">' + esc(t("admin.activity.empty")) + "</div>") +
+      '<footer class="b-foot"><span>' + esc(OY.fmtEventDate(e.starts_at)) + "</span><span>" + esc(t("guest.ticket.board_toggle")) + "</span></footer></div>";
+    if (!K.reduced && sig !== seen) el.querySelectorAll(".r").forEach(function (row, i) {
+      K.anim(row, [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }], { duration: 500, delay: i * 70, easing: K.EASE.out, fill: "backwards" });
+      K.anim(row.querySelector(".bar i"), [{ transform: "scaleX(0)" }, { transform: row.querySelector(".bar i").style.transform }], { duration: 900, delay: 200 + i * 70, easing: K.EASE.out, fill: "backwards" });
+    });
+    seen = sig;
+  }
+  OY.subscribe(draw);
+  setInterval(draw, 30000);
+  draw();
+})();
+</script>
+</body>
+</html>

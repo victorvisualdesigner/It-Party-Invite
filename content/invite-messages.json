@@ -1,0 +1,145 @@
+{
+  "_about": "Invite message library. The server picks one line from each of the four parts, fills the placeholders, and never reuses a combination already sent. 20 x 20 x 20 x 20 = 160,000 unique messages. Members cannot type or edit a message, but Shuffle draws a fresh combination.",
+  "placeholders": {
+    "{guest}": "Guest's first name, exactly as the inviter typed it",
+    "{inviter}": "Inviter's first name (the admin uses their own first name too)",
+    "{link}": "The guest's private invite link",
+    "{key}": "The guest's access key, e.g. VELVET 4827"
+  },
+  "assembly": {
+    "order": ["opening", "pull", "mystery", "covered_if_paid", "close"],
+    "template": "{opening} {pull} {mystery}{covered} {close}\n\n{link}\n\n{key_line}",
+    "notes": [
+      "{covered} is a space plus one line from covered_lines, only when the inviter has already paid for this guest. Otherwise it is empty.",
+      "{key_line} is one line from key_lines, chosen at random.",
+      "The link must sit on its own line so WhatsApp builds the preview card from it.",
+      "Store the four indexes used (e.g. [3, 11, 0, 17]) on the invite, with a unique constraint, so a combination is never sent twice.",
+      "Shuffle draws a new unused combination. The previous one is released back to the pool if it was never sent."
+    ]
+  },
+  "rules": [
+    "Never mention the date, venue, price, dress code or other guests. Messages get forwarded and screenshotted.",
+    "The invite part (everything above the link) stays under 60 words, plus the covered line when it is used. The longest possible combination today is 59 words with long names, 70 with the covered line.",
+    "No dashes between clauses. Keep the house voice: warm, calm, a little mysterious, never salesy, never shouty, no emojis."
+  ],
+  "opening": [
+    "{guest}, a few of us are closing the year somewhere you won't find on any flyer.",
+    "{guest}, this isn't a broadcast, and you're not on a group list.",
+    "{guest}, some nights are planned. This one was curated.",
+    "{guest}, December has one night that most people will never hear about.",
+    "{guest}, there's a room being set for the end of the year, and it's small on purpose.",
+    "{guest}, we're ending the year the way it deserves: privately, and properly.",
+    "{guest}, this message was written for one person, and it's you.",
+    "{guest}, before December runs away with everyone's weekends, hear this first.",
+    "{guest}, a quiet word, because the best things this year were never announced.",
+    "{guest}, the year is almost done, and we're not letting it leave without a proper goodbye.",
+    "{guest}, consider this a soft knock on a door most people don't know exists.",
+    "{guest}, you're reading something only a handful of people will ever receive.",
+    "{guest}, no flyer, no public link, no announcement. Just this.",
+    "{guest}, there's a night coming that won't be posted until it's over.",
+    "{guest}, we kept the list short so the night could be long.",
+    "{guest}, every year ends. Ours is ending with a few good people in one room.",
+    "{guest}, you know those evenings people only talk about afterwards? This is one.",
+    "{guest}, something small and very deliberate is happening this December.",
+    "{guest}, we're closing the year with the people who made it worth it.",
+    "{guest}, read this somewhere quiet. It wasn't written for a crowd."
+  ],
+  "pull": [
+    "{inviter} put your name down, and names don't go down lightly.",
+    "{inviter} chose you by name. That part wasn't random.",
+    "{inviter} is vouching for you, which means you're expected.",
+    "Your name came from {inviter}, and {inviter} doesn't hand names out.",
+    "{inviter} had a few invites to give, and one of them has your name on it.",
+    "{inviter} thought of you first. We trust that instinct.",
+    "When {inviter} was asked who belongs in the room, you came up immediately.",
+    "{inviter} said the night wouldn't be right without you, so here we are.",
+    "This comes through {inviter}, who doesn't spend an invite carelessly.",
+    "{inviter} made a short list. You're on it.",
+    "{inviter} insisted. We didn't argue.",
+    "Every guest is chosen by someone inside. You were chosen by {inviter}.",
+    "{inviter} picked you out of everyone they know. Take that personally.",
+    "There were only a few seats in {inviter}'s hands, and one is now yours.",
+    "{inviter} vouched for you, and around here that counts for a lot.",
+    "{inviter} wanted you in the room when the year closes.",
+    "Out of everyone {inviter} could have called, {inviter} called you.",
+    "{inviter} put you forward, and the door is already holding your name.",
+    "You're here because {inviter} believes you make a good night better.",
+    "{inviter} sent for you specifically. That's how this works."
+  ],
+  "mystery": [
+    "There's an envelope waiting, sealed, and it only opens for you.",
+    "Everything is sealed for now: the details, the place, the rest of the list.",
+    "The details are locked inside an envelope with your name on it.",
+    "What happens there stays inside the envelope until you open it.",
+    "No details here. Those live behind a seal that only answers to you.",
+    "One envelope. One name on it. Yours.",
+    "The rest is behind a wax seal, waiting for the right person to break it.",
+    "We won't say more here. The envelope says everything, to you alone.",
+    "Inside the envelope: the night, the dress code, and a question with one right answer.",
+    "Your envelope is sealed and addressed. It won't open for anyone else.",
+    "The details are kept the old fashioned way: sealed, and personal.",
+    "There's a card inside with your name already written on it.",
+    "It's all in a sealed envelope that won't open for a forwarded link.",
+    "The envelope knows who you are. Nobody else's thumb will open it.",
+    "Some details are revealed now, the rest when the time is right.",
+    "Inside is a card, a question, and a button that may test your patience.",
+    "The seal is fresh, the card is pressed, and the ink has your name.",
+    "Your invitation is sitting behind a seal, warm and waiting.",
+    "Everything you need is behind the seal. Everything else is a surprise.",
+    "It's sealed, it's personal, and it was never meant to travel."
+  ],
+  "close": [
+    "Open yours before the seal gets impatient.",
+    "Break the seal when you're ready. Don't take too long.",
+    "Tap below. It's yours to open.",
+    "Go on. Open it.",
+    "Your key is below. Use it well.",
+    "Open it somewhere you can smile freely.",
+    "We'll see you on the other side of the seal.",
+    "The envelope is one tap away.",
+    "Open it, and try not to say no. You'll see why.",
+    "Take a breath, then tap.",
+    "It's waiting for you, and only you.",
+    "Open it now. Thank us later.",
+    "Don't keep the seal waiting.",
+    "Tap in. In our heads, the night has already started.",
+    "Open it and see what we mean.",
+    "Your move.",
+    "Come and see.",
+    "Open it before December gets busy.",
+    "Everything starts with one tap.",
+    "Break the seal. The rest will make sense."
+  ],
+  "covered_lines": [
+    "And before you ask: {inviter} has already taken care of it.",
+    "One more thing: it's covered. {inviter} insisted.",
+    "Your spot is already paid for, courtesy of {inviter}.",
+    "Don't reach for your wallet. {inviter} has handled it.",
+    "It's on {inviter}. Just come."
+  ],
+  "key_lines": [
+    "Your key: {key}. It works once, and only for you.",
+    "Your key is {key}. Keep it to yourself.",
+    "Key: {key}. One use, one person, you.",
+    "When it asks for your key, it's {key}.",
+    "{key} is your key. It won't work for anyone else."
+  ],
+  "card_ready_messages": {
+    "_about": "Sent by the admin with one tap after confirming a payment, or by the inviter as a nudge. Opens WhatsApp to the guest's chat.",
+    "lines": [
+      "{guest}, it's done. Your card is pressed and waiting: {link}",
+      "{guest}, payment confirmed. Your card is ready, with your name in gold: {link}",
+      "{guest}, you're in. Open your card: {link}",
+      "{guest}, the seal has a new owner. Your card is ready: {link}",
+      "{guest}, welcome inside. Your card is waiting: {link}"
+    ]
+  },
+  "reveal_messages": {
+    "_about": "Sent when the admin reveals the date or venue. Members get a one tap nudge for each of their paid guests.",
+    "lines": [
+      "{guest}, something new just appeared on your card. Take a look: {link}",
+      "{guest}, the seal has loosened a little. Your card has news: {link}",
+      "{guest}, it's time. Check your card: {link}"
+    ]
+  }
+}
