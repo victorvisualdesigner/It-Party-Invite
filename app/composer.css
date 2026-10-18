@@ -2,7 +2,7 @@
    Ported from ui/assets/composer.css; every colour is a token. */
 
 .composer { display: grid; gap: 20px; }
-.composer .head h1 { font-size: var(--text-2xl); }
+.composer .head h1 { font-size: 26px; }
 .composer .head p { margin: 8px 0 0; color: var(--fg-quiet); }
 .warn { margin: 0; padding: 12px 14px; border-radius: var(--radius-md); background: rgba(200, 162, 74, 0.1); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.35); color: var(--accent-strong); font-size: 14px; }
 .surface-paper .warn { color: var(--honey-900); background: var(--honey-100); box-shadow: inset 0 0 0 1px var(--honey-300); }
@@ -25,7 +25,7 @@
 .drafts { display: grid; gap: 22px; margin: 0; padding: 0; list-style: none; }
 .draft { display: grid; gap: 12px; }
 .draft-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.draft-head b { font-family: var(--font-display); font-weight: var(--weight-display); font-size: 22px; }
+.draft-head b { font-family: var(--font-script); font-weight: 400; font-size: 32px; line-height: 1.1; }
 .draft-head small { display: block; font-size: 13px; color: var(--fg-quiet); font-variant-numeric: tabular-nums; }
 
 /* WhatsApp preview */
@@ -60,7 +60,7 @@
 .sent { display: grid; justify-items: center; gap: 14px; text-align: center; padding-top: 12px; }
 .sent .seal-mini { width: 84px; height: 84px; }
 .sent .seal-mini b { font-size: 30px; }
-.sent h2 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: 28px; }
+.sent h2 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: 21px; letter-spacing: var(--tracking-display); }
 .sent p { margin: 0; color: var(--fg-quiet); max-width: 32ch; }
 
 @media (prefers-reduced-motion: reduce) { .msg-fade { animation: none; } }

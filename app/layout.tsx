@@ -1,24 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Pinyon_Script, Plus_Jakarta_Sans, Unbounded } from "next/font/google";
 import { SealDefs } from "@/components/Seal";
 import "@/design/tokens.css";
 import "./base.css";
 
-// Only the latin files are preloaded. The latin-ext files (which hold the naira sign) stay behind a
-// unicode-range, so a browser fetches them only on a page that shows ₦.
-const fraunces = Fraunces({
+// Only the latin files are preloaded. The latin-ext and vietnamese files (the naira sign, and the
+// dots and accents in Yoruba and Igbo names) stay behind a unicode-range, so a browser fetches
+// them only on a page that needs them.
+const display = Unbounded({
   subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["normal", "italic"],
   display: "swap",
-  variable: "--font-fraunces-face",
+  variable: "--font-unbounded-face",
 });
 
-const inter = Inter({
+const script = Pinyon_Script({
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+  variable: "--font-pinyon-face",
+});
+
+const ui = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "600"],
   display: "swap",
-  variable: "--font-inter-face",
+  variable: "--font-jakarta-face",
 });
 
 export const metadata: Metadata = {
@@ -36,7 +42,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={`${display.variable} ${script.variable} ${ui.variable}`}>
       <body>
         <SealDefs />
         {children}

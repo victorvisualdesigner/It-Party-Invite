@@ -743,21 +743,21 @@
     x.strokeStyle = "rgba(200,162,74,.6)"; x.lineWidth = 3; rr(2, 2, W - 4, Hh - 4, 58); x.stroke();
     x.strokeStyle = "rgba(200,162,74,.28)"; x.lineWidth = 2; rr(28, 28, W - 56, Hh - STUB - 56, 36); x.stroke();
     var track = function (px) { if ("letterSpacing" in x) x.letterSpacing = px; };
-    x.fillStyle = v("--gold-400"); x.font = "600 30px Inter"; track("5px");
+    x.fillStyle = v("--gold-400"); x.font = "600 30px 'Plus Jakarta Sans'"; track("5px");
     x.textAlign = "left"; x.fillText(s.event.name.toUpperCase(), 90, 132);
     x.textAlign = "right"; x.fillText(t("guest.ticket.admits").toUpperCase(), W - 90, 132); x.textAlign = "left"; track("0px");
-    var size = 168; x.font = "600 " + size + "px Fraunces"; while (x.measureText(s.guest).width > W - 180 && size > 60) { size -= 6; x.font = "600 " + size + "px Fraunces"; }
+    var size = 220; x.font = size + "px 'Pinyon Script'"; while (x.measureText(s.guest).width > W - 200 && size > 80) { size -= 8; x.font = size + "px 'Pinyon Script'"; }
     var fg = x.createLinearGradient(90, 0, 90 + x.measureText(s.guest).width, 0);
     fg.addColorStop(0, v("--foil-dark")); fg.addColorStop(0.36, v("--foil-light")); fg.addColorStop(0.54, v("--gold-500")); fg.addColorStop(0.74, v("--gold-300")); fg.addColorStop(1, v("--foil-dark"));
-    x.fillStyle = fg; x.fillText(s.guest, 90, 360);
-    x.fillStyle = v("--gold-300"); x.font = "italic 500 52px Fraunces"; x.fillText(t("guest.ticket.invited_by", { inviter: s.inviter }), 90, 440);
+    x.fillStyle = fg; x.fillText(s.guest, 90, 370);
+    x.fillStyle = v("--gold-300"); x.font = "68px 'Pinyon Script'"; x.fillText(t("guest.ticket.invited_by", { inviter: s.inviter }), 90, 440);
     x.fillStyle = "rgba(200,162,74,.3)"; x.fillRect(90, 510, W - 180, 2);
     var ev = s.event, rows = [[t("guest.card.date_label"), ev.date || t("guest.card.date_hidden")], [t("guest.card.venue_label"), ev.venue || t("guest.card.venue_hidden", { venue_reveal_hint: ev.venue_hint })], [t("guest.card.dress_label"), ev.dress]];
     rows.forEach(function (r, i) {
       if (!r[1]) return;
       var y = 590 + i * 110;
-      x.fillStyle = v("--mist-400"); x.font = "600 26px Inter"; track("4px"); x.fillText(r[0].toUpperCase(), 90, y); track("0px");
-      x.fillStyle = v("--mist-100"); x.font = "400 40px Inter"; x.fillText(r[1], 330, y + 4);
+      x.fillStyle = v("--mist-400"); x.font = "600 26px 'Plus Jakarta Sans'"; track("4px"); x.fillText(r[0].toUpperCase(), 90, y); track("0px");
+      x.fillStyle = v("--mist-100"); x.font = "400 40px 'Plus Jakarta Sans'"; x.fillText(r[1], 330, y + 4);
     });
     x.setLineDash([14, 12]); x.strokeStyle = "rgba(200,162,74,.4)"; x.lineWidth = 3;
     x.beginPath(); x.moveTo(60, Hh - STUB); x.lineTo(W - 60, Hh - STUB); x.stroke(); x.setLineDash([]);
@@ -765,8 +765,8 @@
     rr(qx, qy, qs, qs, 26); x.fillStyle = v("--cream-50"); x.fill();
     if (s.qr) { try { var img = await loadSvg(s.qr); x.drawImage(img, qx + 20, qy + 20, qs - 40, qs - 40); } catch (e) {} }
     var note = t("guest.ticket.qr_note").split(". ");
-    x.fillStyle = v("--mist-100"); x.font = "600 40px Inter"; x.fillText(t("guest.ticket.qr_caption"), 450, qy + 80);
-    x.fillStyle = v("--mist-400"); x.font = "400 30px Inter"; x.fillText(note[0] + (note[1] ? "." : ""), 450, qy + 134); x.fillText(note[1] || "", 450, qy + 176);
+    x.fillStyle = v("--mist-100"); x.font = "600 40px 'Plus Jakarta Sans'"; x.fillText(t("guest.ticket.qr_caption"), 450, qy + 80);
+    x.fillStyle = v("--mist-400"); x.font = "400 30px 'Plus Jakarta Sans'"; x.fillText(note[0] + (note[1] ? "." : ""), 450, qy + 134); x.fillText(note[1] || "", 450, qy + 176);
     x.fillStyle = v("--gold-400"); x.font = "600 30px ui-monospace, Menlo, monospace"; track("4px"); x.fillText(s.ticket_code || "", 450, qy + 250);
     c.toBlob(function (b) { showSaved(b, slug(s.event.name) + "-card-" + slug(s.guest) + ".png"); }, "image/png");
   }

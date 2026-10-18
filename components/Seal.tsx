@@ -3,7 +3,7 @@
 
 import { SEAL_D } from "@/lib/seal";
 
-const MONO_FONT = "Fraunces, Georgia, serif";
+const MONO_FONT = "Pinyon Script, Snell Roundhand, cursive";
 
 export function SealDefs() {
   return (
@@ -33,10 +33,10 @@ export function SealSvg({ mono = "" }: { mono?: string }) {
       <circle cx="50" cy="50" r="26.5" fill="none" stroke="rgba(232,209,147,.22)" strokeWidth=".8" strokeDasharray="1.2 2.6" />
       {mono ? (
         <>
-          <text x="50" y="58.5" textAnchor="middle" fontFamily={MONO_FONT} fontStyle="italic" fontWeight="600" fontSize="23" fill="rgba(0,0,0,.35)">
+          <text x="49" y="63.5" textAnchor="middle" fontFamily={MONO_FONT} fontSize="38" fill="rgba(0,0,0,.4)">
             {mono}
           </text>
-          <text x="50" y="57.5" textAnchor="middle" fontFamily={MONO_FONT} fontStyle="italic" fontWeight="600" fontSize="23" fill="rgba(232,209,147,.93)">
+          <text x="49" y="62.5" textAnchor="middle" fontFamily={MONO_FONT} fontSize="38" fill="rgba(240,220,160,.98)">
             {mono}
           </text>
         </>

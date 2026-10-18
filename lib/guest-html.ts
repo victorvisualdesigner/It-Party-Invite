@@ -20,8 +20,8 @@ function sealSvg(mono: string): string {
     `<circle cx="50" cy="50" r="31" fill="url(#${id}b)" opacity=".9"/><circle cx="50" cy="50" r="31" fill="none" stroke="rgba(232,209,147,.38)" stroke-width="1"/>` +
     `<circle cx="50" cy="50" r="26.5" fill="none" stroke="rgba(232,209,147,.22)" stroke-width=".8" stroke-dasharray="1.2 2.6"/>` +
     (mono
-      ? `<text x="50" y="58.5" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-style="italic" font-weight="600" font-size="23" fill="rgba(0,0,0,.35)">${esc(mono)}</text>` +
-        `<text x="50" y="57.5" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-style="italic" font-weight="600" font-size="23" fill="rgba(232,209,147,.93)">${esc(mono)}</text>`
+      ? `<text x="49" y="63.5" text-anchor="middle" font-family="Pinyon Script, Snell Roundhand, cursive" font-size="38" fill="rgba(0,0,0,.4)">${esc(mono)}</text>` +
+        `<text x="49" y="62.5" text-anchor="middle" font-family="Pinyon Script, Snell Roundhand, cursive" font-size="38" fill="rgba(240,220,160,.98)">${esc(mono)}</text>`
       : "") +
     `<ellipse cx="34" cy="27" rx="13" ry="5.5" fill="rgba(255,255,255,.13)" transform="rotate(-32 34 27)"/></svg>`
   );
@@ -128,7 +128,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Plus+Jakarta+Sans:wght@400;600&family=Unbounded:wght@400..700&display=swap">
 <link rel="stylesheet" href="${esc(assets.css)}">
 <script src="${esc(assets.js)}" defer></script>
 </head>
