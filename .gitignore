@@ -11,3 +11,6 @@ supabase/.temp/
 supabase/.branches/
 public/g/
 lib/generated/
+.vercel/
+.vercel
+.env*

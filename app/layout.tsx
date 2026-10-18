@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Pinyon_Script, Plus_Jakarta_Sans, Unbounded } from "next/font/google";
+import { Pinyon_Script, Plus_Jakarta_Sans, Unbounded, Urbanist } from "next/font/google";
 import { SealDefs } from "@/components/Seal";
 import "@/design/tokens.css";
 import "./base.css";
@@ -20,11 +20,20 @@ const script = Pinyon_Script({
   variable: "--font-pinyon-face",
 });
 
-const ui = Plus_Jakarta_Sans({
+const ui = Urbanist({
   subsets: ["latin"],
+  display: "swap",
+  variable: "--font-urbanist-face",
+});
+
+// Urbanist has no naira sign. Plus Jakarta Sans sits second in the stack and supplies only that
+// glyph: it is never preloaded, and its files download only when a page shows ₦.
+const naira = Plus_Jakarta_Sans({
+  subsets: ["latin-ext"],
   weight: ["400", "600"],
   display: "swap",
-  variable: "--font-jakarta-face",
+  preload: false,
+  variable: "--font-naira-face",
 });
 
 export const metadata: Metadata = {
@@ -42,7 +51,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${script.variable} ${ui.variable}`}>
+    <html lang="en" className={`${display.variable} ${script.variable} ${ui.variable} ${naira.variable}`}>
       <body>
         <SealDefs />
         {children}

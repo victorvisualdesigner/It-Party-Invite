@@ -128,7 +128,8 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Plus+Jakarta+Sans:wght@400;600&family=Unbounded:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Unbounded:wght@400..700&family=Urbanist:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&text=%E2%82%A6&display=swap">
 <link rel="stylesheet" href="${esc(assets.css)}">
 <script src="${esc(assets.js)}" defer></script>
 </head>

@@ -9,9 +9,9 @@ body {
 .app { min-height: 100dvh; display: grid; place-items: center; padding-block: 64px 40px; }
 .screen { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
 .screen h1 { font-size: 23px; }
-.lede { margin: 0; color: var(--fg-quiet); max-width: 34ch; text-wrap: pretty; }
+.lede { margin: 0; color: var(--fg-quiet); max-width: 34ch; font-size: 17px; line-height: 1.55; text-wrap: pretty; }
 .lede b { color: var(--fg); font-weight: var(--weight-ui-strong); letter-spacing: 0.02em; }
-.small { font-size: 13px; color: var(--fg-quiet); margin: 0; max-width: 36ch; }
+.small { font-size: 14px; color: var(--fg-quiet); margin: 0; max-width: 36ch; }
 .env-mount { width: 100%; display: flex; justify-content: center; padding-block: 8px 14px; }
 
 /* Ambient gold dust. Quiet, cheap, transform and opacity only. */
@@ -29,7 +29,7 @@ body {
 .sheet-root { z-index: 70; }
 
 /* Masked number pill */
-.masked { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 8px 14px 8px 12px; border-radius: var(--radius-pill); background: rgba(10, 29, 23, 0.55); box-shadow: inset 0 0 0 1px var(--green-700); color: var(--fg-quiet); font-size: 15px; }
+.masked { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 8px 14px 8px 12px; border-radius: var(--radius-pill); background: rgba(10, 29, 23, 0.55); box-shadow: inset 0 0 0 1px var(--green-700); color: var(--fg-quiet); font-size: 16px; }
 .masked .ico { width: 16px; height: 16px; color: var(--gold-400); }
 .masked b { color: var(--fg); font-weight: var(--weight-ui-strong); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
 
@@ -52,15 +52,15 @@ body {
 .corner.tr { right: 6px; top: 6px; transform: scaleX(-1); }
 .corner.bl { left: 6px; bottom: 6px; transform: scaleY(-1); }
 .corner.br { right: 6px; bottom: 6px; transform: scale(-1, -1); }
-.card-eyebrow { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 11px; font-weight: var(--weight-ui-strong); letter-spacing: var(--tracking-eyebrow); text-transform: uppercase; color: var(--gold-700); }
+.card-eyebrow { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 12px; font-weight: var(--weight-ui-strong); letter-spacing: var(--tracking-eyebrow); text-transform: uppercase; color: var(--gold-700); }
 .card-eyebrow::before, .card-eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(143, 114, 48, 0.55)); }
 .card-eyebrow::after { background: linear-gradient(90deg, rgba(143, 114, 48, 0.55), transparent); }
 .salute { margin: 20px 0 2px; font-family: var(--font-script); font-size: 34px; line-height: 1.15; color: var(--ink-600); min-height: 1.3em; }
 .salute .ch { display: inline-block; white-space: pre; }
 .headline { margin: 2px 0 22px; font-size: 26px; font-weight: 600; line-height: 1.16; letter-spacing: var(--tracking-display); color: var(--ink-900); }
 .details { display: grid; grid-template-columns: 100px 1fr; gap: 13px 12px; margin: 0; padding-top: 18px; border-top: 1px solid var(--cream-200); }
-.details dt { font-size: 11px; font-weight: var(--weight-ui-strong); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-600); padding-top: 3px; }
-.details dd { margin: 0; font-size: 15px; color: var(--ink-900); line-height: 1.4; }
+.details dt { font-size: 12px; font-weight: var(--weight-ui-strong); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-600); padding-top: 3px; }
+.details dd { margin: 0; font-size: 16px; color: var(--ink-900); line-height: 1.4; }
 .details dd small { display: block; color: var(--ink-600); font-size: 13px; }
 .details dd.price { font-size: 20px; font-weight: var(--weight-ui-strong); font-variant-numeric: tabular-nums; }
 .details dd.muted { color: var(--ink-600); font-family: var(--font-script); font-size: 21px; line-height: 1.15; }
@@ -99,20 +99,20 @@ body {
 .sheet h2 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: 20px; line-height: 1.2; letter-spacing: var(--tracking-display); outline: none; }
 .held { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: var(--radius-pill); background: rgba(200, 162, 74, 0.12); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.4); color: var(--gold-300); font-size: 13px; font-weight: var(--weight-ui-strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .held .ico { width: 15px; height: 15px; }
-.sheet .intro { margin: 8px 0 0; color: var(--mist-400); font-size: 15px; }
+.sheet .intro { margin: 8px 0 0; color: var(--mist-400); font-size: 16px; }
 .steps { display: flex; gap: 6px; margin: 16px 0 14px; padding: 0; list-style: none; }
-.steps li { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 1.25; color: var(--mist-400); }
+.steps li { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 1.25; color: var(--mist-400); }
 .steps li b { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: var(--gold-300); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.5); }
 .sheet .rows { margin: 0 0 14px; }
 .sheet .note { margin: 0 0 6px; font-size: 13px; color: var(--mist-400); }
-.refund { margin: 0 0 18px; font-size: 13px; color: var(--mist-400); display: flex; gap: 8px; align-items: flex-start; }
+.refund { margin: 0 0 18px; font-size: 14px; color: var(--mist-400); display: flex; gap: 8px; align-items: flex-start; }
 .refund::before { content: ""; flex: none; width: 6px; height: 6px; margin-top: 6px; border-radius: 50%; background: var(--gold-500); }
 .sheet .field { margin-bottom: 14px; }
 .sheet-actions { display: grid; gap: 10px; }
 .sheet-actions .btn { min-height: 54px; }
 
 /* Awaiting */
-.recap { display: inline-flex; gap: 10px; align-items: center; margin: 0; padding: 10px 16px; border-radius: var(--radius-md); text-align: left; max-width: 34ch; background: rgba(10, 29, 23, 0.55); box-shadow: inset 0 0 0 1px var(--green-700); font-size: 13px; color: var(--mist-400); }
+.recap { display: inline-flex; gap: 10px; align-items: center; margin: 0; padding: 10px 16px; border-radius: var(--radius-md); text-align: left; max-width: 34ch; background: rgba(10, 29, 23, 0.55); box-shadow: inset 0 0 0 1px var(--green-700); font-size: 14px; color: var(--mist-400); }
 .recap b { color: var(--gold-300); letter-spacing: 0.08em; }
 .recap .ico { flex: none; width: 18px; height: 18px; color: var(--gold-400); }
 
@@ -152,7 +152,7 @@ body {
 .t-stub { height: var(--stub); display: flex; align-items: center; gap: 18px; padding: 0 26px; }
 .qr { flex: none; width: 120px; height: 120px; padding: 9px; border-radius: 12px; background: var(--cream-50); color: var(--ink-900); }
 .qr svg { width: 100%; height: 100%; }
-.t-stub p { margin: 0; font-size: 13px; color: var(--mist-400); line-height: 1.45; }
+.t-stub p { margin: 0; font-size: 14px; color: var(--mist-400); line-height: 1.45; }
 .t-stub strong { display: block; font-size: 15px; color: var(--mist-100); font-weight: var(--weight-ui-strong); margin-bottom: 4px; }
 .t-code { display: block; margin-top: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; letter-spacing: 0.12em; color: var(--gold-400); }
 .nocount { margin: 6px 0 0; font-family: var(--font-script); font-size: 27px; line-height: 1.2; color: var(--mist-100); }
@@ -164,7 +164,7 @@ body {
 .state-mark { color: var(--gold-400); }
 
 /* In app browser escape hatch */
-.inapp { margin-top: 18px; font-size: 13px; color: var(--mist-400); }
+.inapp { margin-top: 18px; font-size: 14px; color: var(--mist-400); }
 .inapp a { color: var(--gold-300); }
 
 
@@ -191,3 +191,8 @@ body {
 .screen h1:focus, .screen h2:focus, .sheet h2:focus, #sheet-title:focus { outline: none; }
 /* A calm pending state while Yes talks to the server: the button breathes, nothing jumps. */
 .btn-yes.pending { opacity: 0.82; cursor: progress; }
+
+/* Stranger and resting envelopes float gently, like the front door. */
+#s-stranger .envelope, #s-claimed .envelope, #s-ended .envelope { animation: guest-float 6.5s ease-in-out infinite; }
+@keyframes guest-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+@media (prefers-reduced-motion: reduce) { #s-stranger .envelope, #s-claimed .envelope, #s-ended .envelope { animation: none; } }

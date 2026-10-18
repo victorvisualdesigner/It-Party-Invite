@@ -4,7 +4,8 @@
   Fonts, all on Google Fonts:
     Unbounded (display): headings, numbers that matter, the voice of the event.
     Pinyon Script (script): the personal, handwritten moments only. Names, the letter, the seal, the chase lines.
-    Plus Jakarta Sans (UI): everything you read or tap. Has the naira sign and Yoruba and Igbo diacritics.
+    Urbanist (UI): everything you read or tap. Covers Yoruba and Igbo diacritics.
+    Plus Jakarta Sans: only the naira sign, which Urbanist lacks. Loaded as a tiny single glyph file.
   Check that the naira sign renders in both fonts before shipping.
 */
 
@@ -103,7 +104,7 @@
      the guest page links the same families from Google Fonts. */
   --font-display: var(--font-unbounded-face, "Unbounded"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-script: var(--font-pinyon-face, "Pinyon Script"), "Snell Roundhand", "Apple Chancery", cursive;
-  --font-ui: var(--font-jakarta-face, "Plus Jakarta Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-ui: var(--font-urbanist-face, "Urbanist"), var(--font-naira-face, "Plus Jakarta Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --text-xs: 12px;
   --text-sm: 14px;

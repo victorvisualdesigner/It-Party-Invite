@@ -3,7 +3,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; color-scheme: dark; }
-body { margin: 0; font-family: var(--font-ui); font-size: var(--text-md); line-height: 1.5; font-weight: 400; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { margin: 0; font-family: var(--font-ui); font-size: var(--text-md); line-height: 1.55; font-weight: var(--weight-ui); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 img, svg { display: block; }
@@ -69,7 +69,7 @@ a { color: inherit; }
 
 /* Fields */
 .field { display: grid; gap: 6px; text-align: left; }
-.field > label, .label { font-size: 13px; font-weight: var(--weight-ui-strong); color: var(--fg-quiet); }
+.field > label, .label { font-size: 14px; font-weight: var(--weight-ui-strong); color: var(--fg-quiet); }
 .input {
   width: 100%; min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunken);
   color: var(--fg); padding: 0 var(--space-4); font-size: 17px; outline: none;
@@ -84,8 +84,8 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
 .input-affix { position: relative; }
 .input-affix .affix { position: absolute; left: var(--space-4); top: 50%; transform: translateY(-50%); color: var(--fg-quiet); pointer-events: none; }
 .input-affix .input { padding-left: 34px; }
-.help { font-size: 13px; color: var(--fg-quiet); }
-.error { margin: 0; font-size: var(--text-sm); color: var(--err); }
+.help { font-size: 14px; color: var(--fg-quiet); }
+.error { margin: 0; font-size: 15px; font-weight: 500; color: var(--err); }
 
 /* Switch */
 .switch { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); cursor: pointer; }
@@ -122,7 +122,7 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
 
 /* Toast */
 .toast-wrap { position: fixed; z-index: 90; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); display: grid; justify-items: center; pointer-events: none; padding: 0 16px; }
-.toast { max-width: min(440px, 100%); padding: 12px 18px; border-radius: 12px; background: var(--cream-50); color: var(--ink-900); font-size: var(--text-sm); line-height: 1.4; box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.6); pointer-events: auto; display: flex; gap: 12px; align-items: center; }
+.toast { max-width: min(440px, 100%); padding: 12px 18px; border-radius: 12px; background: var(--cream-50); color: var(--ink-900); font-size: 15px; font-weight: 500; line-height: 1.4; box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.6); pointer-events: auto; display: flex; gap: 12px; align-items: center; }
 .toast .btn { min-height: 32px; padding: 0 12px; font-size: 13px; }
 
 /* Sheets and dialogs */

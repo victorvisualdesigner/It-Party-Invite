@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
+import { Landing } from "@/components/landing/Landing";
 
-// There is nothing public at the root. Invites live at /i/{token}, members at /m, the host at /admin.
+// The front door. Invites live at /i/{token}, members at /m, the host at /admin.
 export default function Home() {
-  notFound();
+  return <Landing />;
 }

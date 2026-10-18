@@ -1,0 +1,76 @@
+/* The front door: a sealed envelope that floats in a slow beam of gold light. Transform and opacity only. */
+
+.landing { position: relative; min-height: 100dvh; overflow: hidden; display: grid; place-items: center; padding: 48px max(20px, env(safe-area-inset-right, 0px)) 72px max(20px, env(safe-area-inset-left, 0px)); text-align: center; }
+html:has(.landing) { background-color: var(--green-950); }
+
+/* A slow turning halo of light behind the envelope */
+.landing-rays { position: absolute; left: 50%; top: 42%; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; pointer-events: none; opacity: 0.55;
+  background: repeating-conic-gradient(from 0deg, rgba(200, 162, 74, 0.10) 0deg 6deg, transparent 6deg 18deg);
+  -webkit-mask: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, 0.55) 38%, transparent 72%);
+          mask: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, 0.55) 38%, transparent 72%);
+  animation: landing-turn 90s linear infinite; }
+.landing-glow { position: absolute; left: 50%; top: 40%; width: 640px; height: 640px; margin: -320px 0 0 -320px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(200, 162, 74, 0.28), rgba(200, 162, 74, 0.06) 55%, transparent 72%); animation: landing-breathe 7s ease-in-out infinite; }
+
+/* Gold dust rising */
+.landing-dust { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.landing-dust i { position: absolute; bottom: -12px; width: 3px; height: 3px; border-radius: 50%; background: var(--gold-300); opacity: 0; animation: landing-mote 16s linear infinite; }
+.landing-dust i:nth-child(1) { left: 6%; animation-delay: 0s; }
+.landing-dust i:nth-child(2) { left: 18%; animation-delay: 4s; width: 2px; height: 2px; animation-duration: 19s; }
+.landing-dust i:nth-child(3) { left: 31%; animation-delay: 9s; }
+.landing-dust i:nth-child(4) { left: 44%; animation-delay: 2s; width: 2px; height: 2px; animation-duration: 14s; }
+.landing-dust i:nth-child(5) { left: 57%; animation-delay: 11s; animation-duration: 18s; }
+.landing-dust i:nth-child(6) { left: 69%; animation-delay: 6s; width: 4px; height: 4px; }
+.landing-dust i:nth-child(7) { left: 82%; animation-delay: 13s; width: 2px; height: 2px; }
+.landing-dust i:nth-child(8) { left: 93%; animation-delay: 8s; animation-duration: 15s; }
+
+.landing-stage { position: relative; z-index: 1; width: 100%; max-width: 460px; display: grid; justify-items: center; gap: 18px; }
+.landing-stage > * { animation: landing-rise 900ms var(--ease-out) backwards; }
+.landing-stage > :nth-child(2) { animation-delay: 120ms; }
+.landing-stage > :nth-child(3) { animation-delay: 260ms; }
+.landing-stage > :nth-child(4) { animation-delay: 380ms; }
+.landing-stage > :nth-child(5) { animation-delay: 520ms; }
+.landing h1 { font-size: clamp(26px, 6vw, 40px); line-height: 1.12; }
+.landing .lede { margin: 0; max-width: 32ch; font-size: 18px; line-height: 1.6; color: var(--mist-100); opacity: 0.86; text-wrap: pretty; }
+
+/* The envelope itself: floats, and answers a tap */
+.landing-env { position: relative; display: grid; place-items: center; width: min(340px, 82vw); padding: 26px 0 40px; border: 0; background: none; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.landing-env .float { width: 100%; display: grid; place-items: center; animation: landing-float 6.5s ease-in-out infinite; }
+.landing-env .envelope { width: 100%; }
+.landing-env .shadow { position: absolute; left: 18%; right: 18%; bottom: 14px; height: 18px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent); animation: landing-shadow 6.5s ease-in-out infinite; }
+.landing-env .seal-shine::before { animation: landing-shine 6s var(--ease-in-out) 1.2s infinite; }
+.landing-env:focus-visible { outline: 2px solid var(--gold-400); outline-offset: 6px; border-radius: 16px; }
+.landing-env.knock .float { animation: landing-knock 700ms var(--ease-out); }
+.landing-env.knock .env-flap { animation: landing-flap 900ms var(--ease-in-out); }
+.landing-env.knock .seal { animation: landing-seal 700ms var(--ease-spring); }
+.landing-sparks { position: absolute; left: 50%; top: 52%; width: 0; height: 0; pointer-events: none; }
+.landing-sparks i { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold-300); opacity: 0; }
+.landing-env.knock .landing-sparks i { animation: landing-spark 800ms var(--ease-out) forwards; }
+.landing-env.knock .landing-sparks i:nth-child(1) { --dx: -70px; --dy: -46px; }
+.landing-env.knock .landing-sparks i:nth-child(2) { --dx: 74px; --dy: -40px; animation-delay: 30ms; }
+.landing-env.knock .landing-sparks i:nth-child(3) { --dx: -88px; --dy: 18px; animation-delay: 60ms; }
+.landing-env.knock .landing-sparks i:nth-child(4) { --dx: 90px; --dy: 24px; animation-delay: 20ms; }
+.landing-env.knock .landing-sparks i:nth-child(5) { --dx: -30px; --dy: -78px; animation-delay: 50ms; }
+.landing-env.knock .landing-sparks i:nth-child(6) { --dx: 36px; --dy: -80px; animation-delay: 80ms; }
+
+.landing-hint { margin: -6px 0 0; font-family: var(--font-script); font-size: 26px; line-height: 1.2; color: var(--gold-300); min-height: 1.3em; transition: opacity var(--dur-base); }
+.landing-hint.said { animation: landing-rise 500ms var(--ease-out); }
+.landing-host { position: absolute; z-index: 1; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; color: var(--mist-400); text-decoration: none; padding: 10px 14px; border-radius: var(--radius-pill); }
+.landing-host:hover, .landing-host:focus-visible { color: var(--gold-300); }
+
+@keyframes landing-turn { to { transform: rotate(360deg); } }
+@keyframes landing-breathe { 0%, 100% { opacity: 0.7; transform: scale(0.94); } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes landing-mote { 0% { transform: translate3d(0, 0, 0); opacity: 0; } 12% { opacity: 0.45; } 85% { opacity: 0.2; } 100% { transform: translate3d(28px, -108vh, 0); opacity: 0; } }
+@keyframes landing-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes landing-float { 0%, 100% { transform: translateY(0) rotate(-1.2deg); } 50% { transform: translateY(-12px) rotate(1deg); } }
+@keyframes landing-shadow { 0%, 100% { transform: scaleX(1); opacity: 0.9; } 50% { transform: scaleX(0.82); opacity: 0.55; } }
+@keyframes landing-shine { 0% { opacity: 0; transform: translateX(0) skewX(-20deg); } 4% { opacity: 1; } 18% { opacity: 0; transform: translateX(460%) skewX(-20deg); } 100% { opacity: 0; transform: translateX(460%) skewX(-20deg); } }
+@keyframes landing-knock { 0% { transform: none; } 20% { transform: translateY(-6px) rotate(-3deg); } 45% { transform: translateY(-2px) rotate(2.5deg); } 70% { transform: rotate(-1deg); } 100% { transform: none; } }
+@keyframes landing-flap { 0%, 100% { transform: rotateX(0deg); } 40% { transform: rotateX(28deg); } 70% { transform: rotateX(8deg); } }
+@keyframes landing-seal { 0% { transform: scale(1); } 35% { transform: scale(1.12) rotate(-6deg); } 100% { transform: scale(1); } }
+@keyframes landing-spark { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-rays, .landing-glow, .landing-dust i, .landing-env .float, .landing-env .shadow, .landing-env .seal-shine::before, .landing-stage > * { animation: none !important; }
+  .landing-env.knock .float, .landing-env.knock .env-flap, .landing-env.knock .seal, .landing-env.knock .landing-sparks i { animation: none !important; }
+}

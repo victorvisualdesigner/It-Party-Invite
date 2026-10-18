@@ -157,7 +157,15 @@
       "left": "No has left the chat.",
       "back": "No has rejoined the chat."
     },
-    "network": "The connection dropped. Tap again when you're back online."
+    "network": "The connection dropped. Tap again when you're back online.",
+    "landing": {
+      "_about": "The front door at the root address and on unknown paths. Never any event details.",
+      "title": "By invitation only",
+      "body": "Every envelope here is sealed for one person. If one was meant for you, it arrives by hand.",
+      "hint": "Tap the seal",
+      "sealed": "Still sealed. It only opens for the person it was written for.",
+      "host": "Host access"
+    }
   },
   "member": {
     "login": {
@@ -284,7 +292,12 @@
       "body": "The host portal for {event}.",
       "prototype": "Prototype: any email and password works.",
       "error": "That email and password don't match. Try again.",
-      "submitting": "Signing in"
+      "submitting": "Signing in",
+      "watermark": "Private",
+      "footnote": "Only the host signs in here.",
+      "show_password": "Show password",
+      "hide_password": "Hide password",
+      "home": "Home"
     },
     "overview": {
       "paid": "Paid",
