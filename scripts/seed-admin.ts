@@ -51,20 +51,28 @@ function askHidden(question: string): Promise<string> {
     stdin.resume();
     stdin.setEncoding("utf8");
     let value = "";
-    const onData = (char: string) => {
-      if (char === "\r" || char === "\n" || char === "\u0004") {
-        stdin.setRawMode(false);
-        stdin.pause();
-        stdin.off("data", onData);
-        stdout.write("\n");
-        resolve(value);
-      } else if (char === "\u0003") {
-        stdout.write("\n");
-        process.exit(130);
-      } else if (char === "\u007f" || char === "\b") {
-        value = value.slice(0, -1);
-      } else {
-        value += char;
+    let done = false;
+    // A paste, or fast typing, arrives as one chunk with several characters, so read them one by one.
+    const onData = (chunk: string) => {
+      for (const char of chunk) {
+        if (done) return;
+        if (char === "\r" || char === "\n" || char === "\u0004") {
+          done = true;
+          stdin.setRawMode(false);
+          stdin.pause();
+          stdin.off("data", onData);
+          stdout.write("\n");
+          resolve(value);
+        } else if (char === "\u0003") {
+          stdout.write("\n");
+          process.exit(130);
+        } else if (char === "\u007f" || char === "\b") {
+          if (value) stdout.write("\b \b");
+          value = value.slice(0, -1);
+        } else if (char >= " ") {
+          value += char;
+          stdout.write("•");
+        }
       }
     };
     stdin.on("data", onData);
@@ -91,7 +99,7 @@ async function main() {
   const email = z.email().safeParse(await ask("Admin email: ", flags.email));
   if (!email.success) throw new Error("That email doesn't look right.");
 
-  const password = await askHidden("Password (12+ characters, hidden): ");
+  const password = await askHidden("New password (12+ characters, shown as dots): ");
   if (password.length < 12) throw new Error("Use at least 12 characters for the password.");
   const again = process.env.ADMIN_PASSWORD ? password : await askHidden("Password again: ");
   if (again !== password) throw new Error("The two passwords don't match.");
