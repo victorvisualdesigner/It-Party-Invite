@@ -205,6 +205,19 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
 .seal-mini b { position: relative; font-family: var(--font-script); font-weight: 400; font-size: 21px; line-height: 1; color: rgba(232, 209, 147, 0.95); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
 .seal-mini.quiet svg { filter: saturate(0.2) brightness(0.9); opacity: 0.6; }
 
+/* The Only Yes logo (components/brand/Logo.tsx). Every size comes from the mark's height, --logo-s. */
+.logo { --logo-s: 40px; display: inline-flex; align-items: center; gap: calc(var(--logo-s) * 0.24); line-height: 0; }
+.logo-mark { flex: none; display: block; overflow: visible; }
+.logo-type { display: grid; justify-items: start; gap: calc(var(--logo-s) * 0.12); }
+.logo-word { display: block; height: calc(var(--logo-s) * 0.395); width: auto; }
+.logo-tag { display: block; height: calc(var(--logo-s) * 0.128); width: auto; }
+.logo-light .logo-word { color: var(--cream-100); }
+.logo-light .logo-tag { color: var(--gold-300); }
+.logo-dark .logo-word { color: var(--green-900); }
+.logo-dark .logo-tag { color: var(--gold-700); }
+.logo-stacked { flex-direction: column; gap: calc(var(--logo-s) * 0.2); }
+.logo-stacked .logo-type { justify-items: center; }
+
 
 @media (prefers-reduced-motion: reduce) {
   .env-glow, .chip-awaiting_confirmation::before { animation: none; }

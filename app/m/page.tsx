@@ -1,4 +1,4 @@
-import { MiniSeal } from "@/components/Seal";
+import { Logo, LogoMark } from "@/components/brand/Logo";
 import { InviteComposer } from "@/components/invite/InviteComposer";
 import { t } from "@/lib/copy";
 import { appUrl } from "@/lib/env";
@@ -29,10 +29,14 @@ export default async function MemberPage() {
   return (
     <main className="shell">
       <div className="bar">
-        <span className="brand">
-          <MiniSeal letter={member ? event.reference_prefix : "OY"} />
-          {member ? <span>{event.name}</span> : null}
-        </span>
+        {member ? (
+          <span className="brand">
+            <LogoMark size={30} />
+            <span>{event.name}</span>
+          </span>
+        ) : (
+          <Logo size={34} />
+        )}
       </div>
 
       {member && slots ? (

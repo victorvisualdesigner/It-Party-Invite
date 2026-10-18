@@ -88,7 +88,7 @@ body {
 @keyframes drip { 0% { opacity: 0; transform: translateY(-4px); } 20% { opacity: 1; } 80% { opacity: 1; transform: translateY(10px); } 100% { opacity: 0; transform: translateY(14px); } }
 .bag { position: absolute; left: -14px; top: 14px; width: 16px; height: 13px; border-radius: 3px; background: var(--seal-600); pointer-events: none; }
 .bag::before { content: ""; position: absolute; left: 4px; top: -5px; width: 8px; height: 6px; border: 2px solid var(--seal-600); border-bottom: 0; border-radius: 4px 4px 0 0; }
-.chase-line { min-height: 1.5em; margin: 14px 0 0; font-family: var(--font-script); font-size: 24px; line-height: 1.2; color: var(--ink-600); }
+.chase-line { min-height: 2.9em; margin: 14px 0 0; font-size: 17px; font-weight: 600; line-height: 1.45; color: var(--ink-600); text-wrap: balance; }
 .chase-line.system { font-family: var(--font-ui); font-style: normal; font-size: 13px; letter-spacing: 0.02em; }
 .later-note { margin: 12px 0 0; font-size: 13px; color: var(--ink-600); }
 .decoy { position: fixed; left: 0; top: 0; z-index: 4; height: 36px; padding: 0 14px; border-radius: var(--radius-pill); background: var(--cream-50); color: var(--ink-900); border: 1px solid var(--ink-600); font-weight: var(--weight-ui-strong); font-size: 12px; white-space: nowrap; touch-action: manipulation; box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.5); }
@@ -155,7 +155,7 @@ body {
 .t-stub p { margin: 0; font-size: 14px; color: var(--mist-400); line-height: 1.45; }
 .t-stub strong { display: block; font-size: 15px; color: var(--mist-100); font-weight: var(--weight-ui-strong); margin-bottom: 4px; }
 .t-code { display: block; margin-top: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; letter-spacing: 0.12em; color: var(--gold-400); }
-.nocount { margin: 6px 0 0; font-family: var(--font-script); font-size: 27px; line-height: 1.2; color: var(--mist-100); }
+.nocount { margin: 6px 0 0; font-size: 17px; font-weight: 500; line-height: 1.5; color: var(--mist-100); }
 .ticket-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
 .ticket-actions .btn { padding: 0 14px; }
 .panel-switch { width: 100%; padding: 14px 16px; border-radius: var(--radius-md); background: var(--green-800); text-align: left; font-size: 15px; }

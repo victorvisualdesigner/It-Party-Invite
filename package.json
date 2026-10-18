@@ -17,6 +17,7 @@
     "check:rls": "tsx --env-file=.env.local scripts/check-rls.ts",
     "check:phase1": "tsx --env-file=.env.local scripts/check-phase1.ts",
     "noise": "node scripts/make-noise.mjs",
+    "brand": "tsx scripts/build-brand.ts",
     "build:guest": "node scripts/build-guest.mjs",
     "predev": "node scripts/build-guest.mjs",
     "prebuild": "node scripts/build-guest.mjs",

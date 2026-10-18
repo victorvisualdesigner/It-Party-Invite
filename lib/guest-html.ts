@@ -3,6 +3,7 @@
 import "server-only";
 import { t, tList } from "@/lib/copy";
 import type { GuestView } from "@/lib/guest";
+import { BRAND_SPARK, BRAND_Y } from "@/lib/brand";
 import { SEAL_D } from "@/lib/seal";
 
 const esc = (s: unknown) =>
@@ -10,25 +11,24 @@ const esc = (s: unknown) =>
 
 let sealId = 0;
 
-function sealSvg(mono: string): string {
+function sealSvg(): string {
   const id = `s${++sealId}`;
+  const glyph = `<path d="${BRAND_Y}"/><path d="${BRAND_SPARK}"/>`;
   return (
     `<svg viewBox="0 0 100 100" aria-hidden="true"><defs>` +
     `<radialGradient id="${id}a" cx="34%" cy="28%" r="78%"><stop offset="0" style="stop-color:var(--wax-light)"/><stop offset=".55" style="stop-color:var(--seal-600)"/><stop offset="1" style="stop-color:var(--wax-dark)"/></radialGradient>` +
-    `<radialGradient id="${id}b" cx="62%" cy="68%" r="62%"><stop offset="0" style="stop-color:var(--wax-dark)"/><stop offset="1" style="stop-color:var(--seal-500)"/></radialGradient></defs>` +
+    `<radialGradient id="${id}b" cx="62%" cy="68%" r="62%"><stop offset="0" style="stop-color:var(--wax-dark)"/><stop offset="1" style="stop-color:var(--seal-500)"/></radialGradient>` +
+    `<linearGradient id="${id}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--foil-light)"/><stop offset=".5" style="stop-color:var(--gold-300)"/><stop offset="1" style="stop-color:var(--gold-500)"/></linearGradient></defs>` +
     `<path d="${SEAL_D}" transform="translate(0 2.5)" fill="rgba(0,0,0,.35)"/><path d="${SEAL_D}" fill="url(#${id}a)"/>` +
-    `<circle cx="50" cy="50" r="31" fill="url(#${id}b)" opacity=".9"/><circle cx="50" cy="50" r="31" fill="none" stroke="rgba(232,209,147,.38)" stroke-width="1"/>` +
-    `<circle cx="50" cy="50" r="26.5" fill="none" stroke="rgba(232,209,147,.22)" stroke-width=".8" stroke-dasharray="1.2 2.6"/>` +
-    (mono
-      ? `<text x="49" y="63.5" text-anchor="middle" font-family="Pinyon Script, Snell Roundhand, cursive" font-size="38" fill="rgba(0,0,0,.4)">${esc(mono)}</text>` +
-        `<text x="49" y="62.5" text-anchor="middle" font-family="Pinyon Script, Snell Roundhand, cursive" font-size="38" fill="rgba(240,220,160,.98)">${esc(mono)}</text>`
-      : "") +
+    `<circle cx="50" cy="50" r="31" fill="url(#${id}b)" opacity=".9"/><circle cx="50" cy="50" r="31" fill="none" stroke="rgba(232,209,147,.45)" stroke-width="1.1"/>` +
+    `<g transform="translate(0 1)" fill="rgba(0,0,0,.38)">${glyph}</g><g fill="url(#${id}f)">${glyph}</g>` +
     `<ellipse cx="34" cy="27" rx="13" ry="5.5" fill="rgba(255,255,255,.13)" transform="rotate(-32 34 27)"/></svg>`
   );
 }
 
-export function sealHtml(mono = "OY"): string {
-  return `<div class="seal"><span class="seal-half l">${sealSvg(mono)}</span><span class="seal-half r">${sealSvg(mono)}</span><span class="seal-shine"></span></div>`;
+/** The wax seal with the brand impression (lib/brand.ts), in two halves so it can crack open. */
+export function sealHtml(): string {
+  return `<div class="seal"><span class="seal-half l">${sealSvg()}</span><span class="seal-half r">${sealSvg()}</span><span class="seal-shine"></span></div>`;
 }
 
 export function envelopeHtml(o: { mark?: string; dim?: boolean; glow?: boolean } = {}): string {
@@ -126,6 +126,8 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="${esc(t("guest.preview_card.og_image_alt"))}">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Unbounded:wght@400..700&family=Urbanist:wght@400..700&display=swap">

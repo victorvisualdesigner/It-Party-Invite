@@ -1,3 +1,4 @@
+import { Logo } from "@/components/brand/Logo";
 import { t } from "@/lib/copy";
 import { SealedEnvelope } from "./SealedEnvelope";
 import "./landing.css";
@@ -18,6 +19,9 @@ export function Landing() {
         <i />
         <i />
       </div>
+      <header className="landing-brand">
+        <Logo size={36} />
+      </header>
       <section className="landing-stage">
         <p className="eyebrow">{t("guest.lock.eyebrow")}</p>
         <SealedEnvelope

@@ -3,7 +3,8 @@
   Mood: an old private members' club. Bottle green, antique gold, warm cream paper, one wax red seal.
   Fonts, all on Google Fonts:
     Unbounded (display): headings, numbers that matter, the voice of the event.
-    Pinyon Script (script): the personal, handwritten moments only. Names, the letter, the seal, the chase lines.
+    Pinyon Script (script): names, salutations and flourishes of three words or fewer. Never a full sentence:
+      a sentence in script is slow to read, so lines like the chase lines use Urbanist.
     Urbanist (UI): everything you read or tap. Covers Yoruba and Igbo diacritics.
     Plus Jakarta Sans: only the naira sign, which Urbanist lacks. Loaded as a tiny single glyph file.
   Check that the naira sign renders in both fonts before shipping.

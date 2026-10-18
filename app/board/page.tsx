@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Envelope } from "@/components/Envelope";
-import { MiniSeal } from "@/components/Seal";
+import { LogoMark } from "@/components/brand/Logo";
 import { boardRows } from "@/lib/admin-data";
 import { getAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
@@ -42,7 +42,7 @@ export default async function BoardPage() {
             <h1 className="display">{t("admin.board.title", { year })}</h1>
             <p className="sub">{t("admin.board.subtitle")}</p>
           </div>
-          <MiniSeal letter={event.reference_prefix} />
+          <LogoMark size={110} />
         </header>
         {rows.length ? (
           <ol className="rows-b">

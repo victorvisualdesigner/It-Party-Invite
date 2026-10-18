@@ -1,11 +1,13 @@
 // The 1200x630 link preview: a sealed cream envelope with a red wax seal on deep green.
 // Same for every guest, built once at build time. No event details, ever.
 import { ImageResponse } from "next/og";
+import { BRAND_SPARK, BRAND_Y } from "@/lib/brand";
 import { SEAL_D } from "@/lib/seal";
 
 export const dynamic = "force-static";
 
-// Colours mirror design/tokens.css (green-650, green-900, green-950, paper, wax, seal).
+// Colours mirror design/tokens.css (green-650, green-900, green-950, paper, wax, seal, foil).
+// The seal carries the brand impression from lib/brand.ts.
 const W = 520;
 const H = 325;
 const scene = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
@@ -16,6 +18,7 @@ const scene = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"
   <linearGradient id="flap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3EBDC"/><stop offset="1" stop-color="#E3D5BC"/></linearGradient>
   <radialGradient id="wa" cx="34%" cy="28%" r="78%"><stop offset="0" stop-color="#BF3A3A"/><stop offset=".55" stop-color="#8E1B1B"/><stop offset="1" stop-color="#651010"/></radialGradient>
   <radialGradient id="wb" cx="62%" cy="68%" r="62%"><stop offset="0" stop-color="#651010"/><stop offset="1" stop-color="#A52626"/></radialGradient>
+  <linearGradient id="foil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2DFA4"/><stop offset=".5" stop-color="#E8D193"/><stop offset="1" stop-color="#C8A24A"/></linearGradient>
 </defs>
 <rect width="1200" height="630" fill="url(#bg)"/>
 <ellipse cx="600" cy="315" rx="380" ry="260" fill="url(#glow)"/>
@@ -31,8 +34,9 @@ const scene = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"
     <path d="${SEAL_D}" transform="translate(0 2.5)" fill="#000" opacity=".35"/>
     <path d="${SEAL_D}" fill="url(#wa)"/>
     <circle cx="50" cy="50" r="31" fill="url(#wb)" opacity=".9"/>
-    <circle cx="50" cy="50" r="31" fill="none" stroke="#E8D193" stroke-opacity=".38" stroke-width="1"/>
-    <circle cx="50" cy="50" r="26.5" fill="none" stroke="#E8D193" stroke-opacity=".22" stroke-width=".8" stroke-dasharray="1.2 2.6"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#E8D193" stroke-opacity=".45" stroke-width="1.1"/>
+    <g transform="translate(0 1)" fill="#000" fill-opacity=".38"><path d="${BRAND_Y}"/><path d="${BRAND_SPARK}"/></g>
+    <g fill="url(#foil)"><path d="${BRAND_Y}"/><path d="${BRAND_SPARK}"/></g>
     <ellipse cx="34" cy="27" rx="13" ry="5.5" fill="#fff" opacity=".13" transform="rotate(-32 34 27)"/>
   </g>
 </g>

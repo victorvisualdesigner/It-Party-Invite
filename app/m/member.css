@@ -7,8 +7,6 @@ html:has(.member-root) { background-color: var(--green-900); }
 .shell > * { min-width: 0; }
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: var(--tracking-display); }
-.brand .seal-mini { width: 30px; height: 30px; }
-.brand .seal-mini b { font-size: 12px; }
 .greeting { font-size: 26px; }
 
 /* Slot card */

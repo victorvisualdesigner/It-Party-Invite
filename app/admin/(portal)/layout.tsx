@@ -1,6 +1,6 @@
 import { AdminNav, type NavItem } from "@/components/admin/AdminNav";
 import { Icon } from "@/components/Icon";
-import { MiniSeal } from "@/components/Seal";
+import { LogoMark } from "@/components/brand/Logo";
 import { ToastProvider } from "@/components/Toast";
 import { requireAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
@@ -29,7 +29,7 @@ export default async function PortalLayout({ children }: { children: React.React
       <div className="admin">
         <aside className="side surface-dark">
           <div className="brand">
-            <MiniSeal letter={event.reference_prefix} />
+            <LogoMark size={40} />
             <span>
               <b>{event.name}</b>
               <small>{t("admin.members.host")}</small>

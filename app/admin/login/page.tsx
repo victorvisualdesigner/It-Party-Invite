@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Envelope } from "@/components/Envelope";
 import { Icon } from "@/components/Icon";
-import { MiniSeal } from "@/components/Seal";
+import { Logo } from "@/components/brand/Logo";
 import { getAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { LoginForm } from "./LoginForm";
@@ -19,7 +19,7 @@ export default async function LoginPage() {
       </span>
       <div className="login-board">
         <section className="login-panel surface-dark bg-club" aria-hidden="true">
-          <MiniSeal letter="OY" />
+          <Logo size={44} />
           <div className="login-panel-art">
             <Envelope mark={t("guest.lock.envelope_mark")} />
           </div>

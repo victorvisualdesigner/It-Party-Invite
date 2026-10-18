@@ -1,7 +1,7 @@
 // The sealed envelope, built from layered paper as in ui/assets/kit.js. Static here: it only decorates.
 import { Seal } from "@/components/Seal";
 
-export function Envelope({ mark, mono = "OY", glow = false }: { mark?: string; mono?: string; glow?: boolean }) {
+export function Envelope({ mark, glow = false }: { mark?: string; glow?: boolean }) {
   return (
     <div className="envelope" aria-hidden="true">
       {glow ? <div className="env-layer env-glow" /> : null}
@@ -23,7 +23,7 @@ export function Envelope({ mark, mono = "OY", glow = false }: { mark?: string; m
         <i className="out" />
         <i className="in" />
       </div>
-      <Seal mono={mono} />
+      <Seal />
     </div>
   );
 }

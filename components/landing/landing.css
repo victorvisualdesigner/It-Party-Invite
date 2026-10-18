@@ -1,6 +1,6 @@
 /* The front door: a sealed envelope that floats in a slow beam of gold light. Transform and opacity only. */
 
-.landing { position: relative; min-height: 100dvh; overflow: hidden; display: grid; place-items: center; padding: 48px max(20px, env(safe-area-inset-right, 0px)) 72px max(20px, env(safe-area-inset-left, 0px)); text-align: center; }
+.landing { position: relative; min-height: 100dvh; overflow: hidden; display: grid; place-items: center; padding: calc(100px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) 72px max(20px, env(safe-area-inset-left, 0px)); text-align: center; }
 html:has(.landing) { background-color: var(--green-950); }
 
 /* A slow turning halo of light behind the envelope */
@@ -53,12 +53,15 @@ html:has(.landing) { background-color: var(--green-950); }
 .landing-env.knock .landing-sparks i:nth-child(5) { --dx: -30px; --dy: -78px; animation-delay: 50ms; }
 .landing-env.knock .landing-sparks i:nth-child(6) { --dx: 36px; --dy: -80px; animation-delay: 80ms; }
 
-.landing-hint { margin: -6px 0 0; font-family: var(--font-script); font-size: 26px; line-height: 1.2; color: var(--gold-300); min-height: 1.3em; transition: opacity var(--dur-base); }
+/* Plain, readable type: this line is a full sentence after the first tap. Two lines are kept free so nothing jumps. */
+.landing-hint { margin: -6px 0 0; max-width: 30ch; min-height: 2.9em; font-size: 17px; font-weight: 600; line-height: 1.45; letter-spacing: 0.01em; color: var(--gold-300); text-wrap: balance; }
 .landing-hint.said { animation: landing-rise 500ms var(--ease-out); }
+.landing-brand { position: absolute; z-index: 1; left: 50%; top: calc(30px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); animation: landing-drop 900ms var(--ease-out) backwards; }
 .landing-host { position: absolute; z-index: 1; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; color: var(--mist-400); text-decoration: none; padding: 10px 14px; border-radius: var(--radius-pill); }
 .landing-host:hover, .landing-host:focus-visible { color: var(--gold-300); }
 
 @keyframes landing-turn { to { transform: rotate(360deg); } }
+@keyframes landing-drop { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes landing-breathe { 0%, 100% { opacity: 0.7; transform: scale(0.94); } 50% { opacity: 1; transform: scale(1.04); } }
 @keyframes landing-mote { 0% { transform: translate3d(0, 0, 0); opacity: 0; } 12% { opacity: 0.45; } 85% { opacity: 0.2; } 100% { transform: translate3d(28px, -108vh, 0); opacity: 0; } }
 @keyframes landing-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
@@ -71,6 +74,6 @@ html:has(.landing) { background-color: var(--green-950); }
 @keyframes landing-spark { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-rays, .landing-glow, .landing-dust i, .landing-env .float, .landing-env .shadow, .landing-env .seal-shine::before, .landing-stage > * { animation: none !important; }
+  .landing-rays, .landing-glow, .landing-dust i, .landing-env .float, .landing-env .shadow, .landing-env .seal-shine::before, .landing-stage > *, .landing-brand { animation: none !important; }
   .landing-env.knock .float, .landing-env.knock .env-flap, .landing-env.knock .seal, .landing-env.knock .landing-sparks i { animation: none !important; }
 }
