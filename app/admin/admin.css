@@ -398,3 +398,44 @@ html:has(.admin-root) { background-color: var(--cream-50); }
 .setup-card { animation: none; }
 .setup-body { margin: -4px 0 4px; text-align: center; color: var(--ink-600); font-size: 15px; line-height: 1.5; }
 .setup-form { display: grid; gap: 18px; }
+
+/* Card design */
+.swatches { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; }
+.swatches legend { padding: 0; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--fg); }
+.swatch-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatch { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 14px 6px 8px; border-radius: var(--radius-pill); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; font-size: 14px; font-weight: var(--weight-ui-strong); color: var(--fg); background: var(--raised); }
+.swatch input { position: absolute; opacity: 0; pointer-events: none; }
+.swatch.on { box-shadow: inset 0 0 0 2px var(--gold-600); }
+.swatch:has(input:focus-visible) { outline: 2px solid var(--gold-600); outline-offset: 2px; }
+.swatch .dot { width: 28px; height: 28px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.dot-theme { background: radial-gradient(120% 120% at 30% 20%, var(--green-600), var(--green-900) 60%, var(--green-950)); }
+.dot-foil { background: linear-gradient(135deg, var(--foil-light), var(--gold-500) 55%, var(--foil-dark)); }
+.dot-paper { background: linear-gradient(160deg, var(--cream-50), var(--cream-100) 60%, var(--cream-200)); }
+.pv-note { margin: 12px 0 0; font-style: italic; font-size: 13px; text-align: center; color: var(--gold-700); }
+.preview .pv-card .ev { color: var(--gold-700); }
+
+/* All events (superadmin) */
+.event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px; }
+.event-card { display: grid; gap: 16px; padding: 20px 22px; }
+.event-card.is-current { box-shadow: 0 0 0 2px var(--gold-500), 0 12px 32px -22px rgba(60, 44, 20, 0.35); }
+.ev-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ev-head h2 { font-size: 18px; }
+.ev-head small { display: block; margin-top: 4px; color: var(--fg-quiet); font-size: 13px; }
+.ev-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; }
+.ev-stats div { padding: 10px 12px; border-radius: var(--radius-md); background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line); }
+.ev-stats dt { font-size: 11px; font-weight: var(--weight-ui-strong); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-quiet); }
+.ev-stats dd { margin: 4px 0 0; font-family: var(--font-display); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ev-admins { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+.ev-admins-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ev-admins ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.ev-admins li { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; }
+.ev-admins li .admin-acts { grid-column: 1 / -1; justify-content: flex-start; }
+.ev-admins .quiet { margin: 0; font-size: 14px; }
+.sub-head { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid var(--line); }
+.sub-head b { font-size: 15px; }
+.switch-link { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: var(--weight-ui-strong); letter-spacing: 0.06em; color: var(--gold-400); text-decoration: underline; text-underline-offset: 3px; }
+.phone-bar .switch-link { margin: 0; white-space: nowrap; }
+@media (max-width: 520px) {
+  .event-grid { grid-template-columns: 1fr; }
+  .ev-stats { grid-template-columns: repeat(2, 1fr); }
+}

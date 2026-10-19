@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Envelope } from "@/components/Envelope";
 import { LogoMark } from "@/components/brand/Logo";
 import { boardRows } from "@/lib/admin-data";
-import { getAdmin } from "@/lib/auth";
+import { getEventAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { formatEventWhen } from "@/lib/event";
 import { getEvent } from "@/lib/settings";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 // For a TV at the party. Admin session required; refreshes every 30 seconds.
 export default async function BoardPage() {
-  const admin = await getAdmin();
+  const admin = await getEventAdmin();
   if (!admin) {
     return (
       <main className="board-root surface-dark bg-club">
@@ -28,7 +28,7 @@ export default async function BoardPage() {
       </main>
     );
   }
-  const [event, rows] = await Promise.all([getEvent(), boardRows()]);
+  const [event, rows] = await Promise.all([getEvent(admin.eventId), boardRows(admin.eventId)]);
   const year = event.starts_at ? new Date(event.starts_at).getUTCFullYear() : new Date().getUTCFullYear();
   const max = Math.max(1, rows[0]?.taps ?? 1);
   const tapsLabel = (t("admin.board.row", { guest: "\u0001", n: "\u0002" }).split(" · ")[1] ?? "").replace("\u0002", "").trim();

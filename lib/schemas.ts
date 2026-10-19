@@ -4,7 +4,7 @@ import { t } from "@/lib/copy";
 import { eventDates, fromLagos, lagosDate, MAX_EVENT_DAYS } from "@/lib/event";
 import { nairaToKobo } from "@/lib/money";
 import { normalizePhone } from "@/lib/phone";
-import { REVEAL_MODES, type EventDay, type EventRow, type RevealMode } from "@/lib/types";
+import { CARD_FOILS, CARD_NOTE_MAX, CARD_PAPERS, CARD_THEMES, REVEAL_MODES, type EventDay, type EventRow, type RevealMode } from "@/lib/types";
 import type { FieldErrors } from "@/lib/action";
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; errors: FieldErrors };
@@ -32,10 +32,12 @@ export const eventInputSchema = z.object({
   reveal_date_at: text(16),
   reveal_venue_mode: z.enum(REVEAL_MODES),
   reveal_venue_at: text(16),
+  card: z.object({ theme: z.enum(CARD_THEMES), foil: z.enum(CARD_FOILS), paper: z.enum(CARD_PAPERS), note: text(200) }),
 });
 export type EventInput = z.infer<typeof eventInputSchema>;
 
-export type EventPatch = Omit<EventRow, "id" | "reference_prefix">;
+export type EventPatch = Omit<EventRow, "id" | "reference_prefix" | "created_at">;
+
 
 function wholeNumber(value: string, min: number, max: number): number | null {
   const v = value.trim();
@@ -111,6 +113,9 @@ export function parseEventInput(raw: unknown): Parsed<EventPatch> {
   const revealDateAt = reveal(input.reveal_date_mode, input.reveal_date_at, "reveal_date_at");
   const revealVenueAt = reveal(input.reveal_venue_mode, input.reveal_venue_at, "reveal_venue_at");
 
+  const note = input.card.note.trim().replace(/\s+/g, " ");
+  if (note.length > CARD_NOTE_MAX) errors.card_note = t("admin.event.errors.card_note", { n: CARD_NOTE_MAX });
+
   if (Object.keys(errors).length) return { ok: false, errors };
   return {
     ok: true,
@@ -132,6 +137,7 @@ export function parseEventInput(raw: unknown): Parsed<EventPatch> {
       reveal_date_at: revealDateAt,
       reveal_venue_mode: input.reveal_venue_mode,
       reveal_venue_at: revealVenueAt,
+      card: { theme: input.card.theme, foil: input.card.foil, paper: input.card.paper, note },
     },
   };
 }
@@ -244,4 +250,30 @@ export function parseNewPassword(password: unknown, again: unknown): { ok: true;
   if (p.length < 12 || p.length > 200) return { ok: false, errors: { password: t("admin.setup.errors.short") } };
   if (p !== a) return { ok: false, errors: { again: t("admin.setup.errors.match") } };
   return { ok: true, value: p };
+}
+
+/* ---------- Events (superadmin) ---------- */
+
+export const createEventSchema = z.object({ name: text(200), admin: adminInputSchema });
+export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+/** A new event's name, and its admin when any of the admin's fields is filled in. */
+export function parseCreateEvent(
+  raw: unknown,
+): Parsed<{ name: string; admin: { first_name: string; email: string; phone_e164: string } | null }> {
+  const shape = createEventSchema.safeParse(raw);
+  if (!shape.success) return { ok: false, errors: { form: t("admin.common.error_network") } };
+  const errors: FieldErrors = {};
+  const name = shape.data.name.trim().replace(/\s+/g, " ");
+  if (!name || name.length > 80) errors.name = t("admin.events.errors.name");
+  const a = shape.data.admin;
+  const wantsAdmin = !!(a.first_name.trim() || a.email.trim() || a.phone.trim());
+  let admin = null;
+  if (wantsAdmin) {
+    const parsed = parseAdminInput(a);
+    if (!parsed.ok) Object.entries(parsed.errors).forEach(([k, v]) => (errors[`admin.${k}`] = v));
+    else admin = parsed.value;
+  }
+  if (Object.keys(errors).length) return { ok: false, errors };
+  return { ok: true, value: { name, admin } };
 }

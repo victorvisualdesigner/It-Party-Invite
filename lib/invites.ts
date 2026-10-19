@@ -16,7 +16,8 @@ import { smsLink, waLink } from "@/lib/whatsapp";
 const HOUR = 3600e3;
 const DAY = 24 * HOUR;
 
-export type Inviter = Pick<Person, "id" | "role" | "first_name" | "slot_limit">;
+/** Who is inviting, and into which event. For the superadmin, the event they have open. */
+export type Inviter = Pick<Person, "id" | "role" | "first_name" | "slot_limit"> & { event_id: number };
 
 export function inviteLink(token: string): string {
   return appUrl(`/i/${token}`);
@@ -97,6 +98,7 @@ export async function slotInfo(inviter: Inviter): Promise<SlotInfo> {
     .from("invites")
     .select("id", { count: "exact", head: true })
     .eq("inviter_id", inviter.id)
+    .eq("event_id", inviter.event_id)
     .in("status", SLOT_STATUSES);
   const used = count ?? 0;
   const unlimited = isHost(inviter.role) || inviter.slot_limit == null;
@@ -107,7 +109,7 @@ export async function slotInfo(inviter: Inviter): Promise<SlotInfo> {
 export type CapacityInfo = { used: number; capacity: number | null; left: number; nearlyFull: boolean };
 
 export async function capacityInfo(event: EventRow): Promise<CapacityInfo> {
-  const { count } = await db().from("invites").select("id", { count: "exact", head: true }).in("status", SLOT_STATUSES);
+  const { count } = await db().from("invites").select("id", { count: "exact", head: true }).eq("event_id", event.id).in("status", SLOT_STATUSES);
   const used = count ?? 0;
   const left = event.capacity == null ? Number.POSITIVE_INFINITY : Math.max(0, event.capacity - used);
   return { used, capacity: event.capacity, left, nearlyFull: event.capacity != null && left <= 3 };
@@ -115,7 +117,7 @@ export async function capacityInfo(event: EventRow): Promise<CapacityInfo> {
 
 /** Why this inviter cannot send right now, as a copy string, or null when they can send `n` more. */
 export async function sendBlocker(inviter: Inviter, n = 1): Promise<string | null> {
-  const event = await getEvent();
+  const event = await getEvent(inviter.event_id);
   if (!event.invites_open) return t("guest.closed.body", { event: event.name });
   const slots = await slotInfo(inviter);
   if (slots.left <= 0) return t("member.home.slots_none");
@@ -183,6 +185,7 @@ async function insertDraft(inviter: Inviter, row: DraftRow): Promise<Invite> {
       .from("invites")
       .insert({
         token: newToken(),
+        event_id: inviter.event_id,
         inviter_id: inviter.id,
         guest_first_name: row.first_name,
         guest_phone_e164: row.phone_e164,
@@ -221,6 +224,7 @@ export async function createDrafts(inviter: Inviter, rows: DraftRow[]): Promise<
   const { data: live } = await db()
     .from("invites")
     .select("guest_phone_e164")
+    .eq("event_id", inviter.event_id)
     .in("guest_phone_e164", rows.map((r) => r.phone_e164))
     .not("status", "in", "(draft,expired,cancelled)");
   const taken = new Set((live ?? []).map((r) => r.guest_phone_e164 as string));
@@ -234,6 +238,7 @@ export async function createDrafts(inviter: Inviter, rows: DraftRow[]): Promise<
     .from("invites")
     .delete()
     .eq("inviter_id", inviter.id)
+    .eq("event_id", inviter.event_id)
     .eq("status", "draft")
     .in("guest_phone_e164", rows.map((r) => r.phone_e164));
 
@@ -283,7 +288,7 @@ export async function sendDraft(inviteId: string, inviter: Inviter, actor: Actor
   }
   const blocker = await sendBlocker(inviter, 1);
   if (blocker) return { ok: false, message: blocker };
-  const event = await getEvent();
+  const event = await getEvent(draft.event_id);
   const now = new Date();
   // A host covering a guest needs no transfer: the guest is covered from the moment it goes out.
   const comp = isHost(inviter.role) && draft.covered_line_index != null;
@@ -308,12 +313,13 @@ export async function sendDraft(inviteId: string, inviter: Inviter, actor: Actor
 
 /* ---------- Admin actions on an invite ---------- */
 
-/** Cancels any invite that is not paid. Live payments are voided. */
-export async function cancelInvite(inviteId: string, actorId: string): Promise<boolean> {
+/** Cancels any invite of this event that is not paid. Live payments are voided. */
+export async function cancelInvite(eventId: number, inviteId: string, actorId: string): Promise<boolean> {
   const { data } = await db()
     .from("invites")
     .update({ status: "cancelled", expires_at: null, hold_remaining_ms: null, key_plain_draft: null })
     .eq("id", inviteId)
+    .eq("event_id", eventId)
     .not("status", "in", "(paid,cancelled)")
     .select("id, guest_first_name")
     .maybeSingle();
@@ -329,12 +335,13 @@ export type KeyedMessage = { guest: string; key: string; message: string; waHref
  * Reset access: a new key, the old one stops working, every phone is signed out, the lockout clears.
  * Returns the full invite message with the new key, ready to send again.
  */
-export async function resetAccess(inviteId: string, actorId: string): Promise<KeyedMessage | null> {
+export async function resetAccess(eventId: number, inviteId: string, actorId: string): Promise<KeyedMessage | null> {
   const key = generateKey();
   const { data } = await db()
     .from("invites")
     .update({ key_hash: await hashKey(key), wrong_attempts: 0, locked_until: null })
     .eq("id", inviteId)
+    .eq("event_id", eventId)
     .in("status", ["sent", "opened", "said_yes", "awaiting_confirmation", "paid"])
     .select("*")
     .maybeSingle();

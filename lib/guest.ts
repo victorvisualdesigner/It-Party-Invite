@@ -13,7 +13,7 @@ import { maskPhone, normalizePhone } from "@/lib/phone";
 import { getEvent } from "@/lib/settings";
 import { addInviteDevice } from "@/lib/session";
 import { ticketQrSvg } from "@/lib/tickets";
-import type { EventRow, Invite, Payment } from "@/lib/types";
+import type { CardDesign, EventRow, Invite, Payment } from "@/lib/types";
 
 const MINUTE = 60e3;
 const HOUR = 3600e3;
@@ -37,6 +37,8 @@ export type EventView = {
   dress: string;
   price: string;
   refund: string;
+  /** The look this event chose for the card: theme, foil, paper and a short note. */
+  card: CardDesign;
 };
 
 export type GuestView =
@@ -82,6 +84,7 @@ export function eventView(e: EventRow, paid: boolean): EventView {
     dress: e.dress_code,
     price: formatNaira(e.price_kobo),
     refund: e.refund_text,
+    card: e.card,
   };
 }
 
@@ -103,7 +106,7 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
     return { screen: "lock", masked: maskPhone(inv.guest_phone_e164) };
   }
 
-  const event = await getEvent();
+  const event = await getEvent(inv.event_id);
   const paid = inv.status === "paid";
   const base = {
     guest: inv.guest_first_name,
@@ -173,7 +176,7 @@ export async function unlock(inv: Invite | null, phone: string, key: string, alr
   if (!inv.opened_at) {
     updates.opened_at = new Date(now).toISOString();
     if (inv.status === "sent") {
-      const event = await getEvent();
+      const event = await getEvent(inv.event_id);
       updates.status = "opened";
       if (!inv.covered) updates.expires_at = new Date(now + event.hold_window_hours * HOUR).toISOString();
     }
@@ -193,7 +196,7 @@ export type YesResult =
 /** The guest tapped Yes. Covered or free invites go straight to paid; everyone else gets the transfer sheet. */
 export async function sayYes(inv: Invite): Promise<YesResult> {
   if (!["opened", "said_yes"].includes(inv.status)) return { kind: "refresh" };
-  const event = await getEvent();
+  const event = await getEvent(inv.event_id);
   if (!event.invites_open) return { kind: "refresh" };
   const yesAt = inv.yes_at ?? new Date().toISOString();
   if (!inv.yes_at) await db().from("invites").update({ yes_at: yesAt }).eq("id", inv.id);

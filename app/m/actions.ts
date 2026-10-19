@@ -70,7 +70,7 @@ export async function openMemberPayAction(inviteId: string): Promise<OpenPayResu
   const p = await openMemberPayment(inv, member.id);
   if (!p) return { ok: false, message: t("guest.transfer.no_account") };
   const view = await paymentView(p);
-  const event = await getEvent();
+  const event = await getEvent(member.event_id);
   return {
     ok: true,
     data: {

@@ -1,5 +1,5 @@
-// Admins: the superadmin adds and removes them. A new admin gets a one time setup link on WhatsApp
-// and picks their own password, so nobody ever types or sends a password for someone else.
+// Event admins: the superadmin adds them to an event and removes them. A new admin gets a one time
+// setup link on WhatsApp and picks their own password, so nobody types or sends a password for someone else.
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import type { User } from "@supabase/supabase-js";
@@ -22,16 +22,18 @@ export type AdminRow = {
   phone: string;
   role: "superadmin" | "admin";
   pending: boolean;
+  eventId: number | null;
 };
 
 export type SetupDelivery = { name: string; link: string; message: string; waHref: string };
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
+/** Every host: the superadmin and each event's admins. */
 export async function listAdmins(): Promise<AdminRow[]> {
   const { data, error } = await db()
     .from("people")
-    .select("id, first_name, phone_e164, role, email, setup_hash, auth_user_id, created_at")
+    .select("id, first_name, phone_e164, role, email, setup_hash, auth_user_id, event_id, created_at")
     .in("role", ["superadmin", "admin"])
     .eq("active", true)
     .order("created_at", { ascending: true });
@@ -53,6 +55,7 @@ export async function listAdmins(): Promise<AdminRow[]> {
       phone: p.phone_e164,
       role: p.role as AdminRow["role"],
       pending: !!p.setup_hash,
+      eventId: p.event_id,
     }))
     .sort((a, b) => (a.role === b.role ? 0 : a.role === "superadmin" ? -1 : 1));
 }
@@ -68,26 +71,31 @@ async function findAuthUser(email: string): Promise<User | null> {
   return null;
 }
 
-async function issueLink(person: Pick<Person, "id" | "first_name" | "phone_e164">): Promise<SetupDelivery> {
+async function issueLink(person: Pick<Person, "id" | "first_name" | "phone_e164" | "event_id">): Promise<SetupDelivery> {
   const token = randomBytes(32).toString("base64url");
   const { error } = await db()
     .from("people")
     .update({ setup_hash: sha(token), setup_expires_at: new Date(Date.now() + SETUP_MS).toISOString() })
     .eq("id", person.id);
   if (error) throw new Error(`Could not make the setup link: ${error.message}`);
-  const event = await getEvent();
+  const event = person.event_id != null ? await getEvent(person.event_id) : null;
   const link = appUrl(`/admin/setup/${token}`);
-  const message = t("admin.admins.link_message", { admin: person.first_name, event: event.name, link });
+  const message = t("admin.admins.link_message", { admin: person.first_name, event: event?.name ?? "", link });
   return { name: person.first_name, link, message, waHref: waLink(person.phone_e164, message) };
 }
 
 export type AddAdminInput = { first_name: string; email: string; phone_e164: string };
 export type AddAdminResult = { ok: true; delivery: SetupDelivery } | { ok: false; errors: Record<string, string> };
 
-export async function addAdmin(input: AddAdminInput, actorId: string): Promise<AddAdminResult> {
+export async function addAdmin(eventId: number, input: AddAdminInput, actorId: string): Promise<AddAdminResult> {
   const taken = { ok: false as const, errors: { email: t("admin.admins.errors.taken") } };
   const email = input.email.toLowerCase();
-  const { data: byPhone } = await db().from("people").select("id, active, auth_user_id").eq("phone_e164", input.phone_e164).maybeSingle();
+  const { data: byPhone } = await db()
+    .from("people")
+    .select("id, active, auth_user_id")
+    .eq("event_id", eventId)
+    .eq("phone_e164", input.phone_e164)
+    .maybeSingle();
   if (byPhone?.active) return { ok: false, errors: { phone: t("admin.admins.errors.taken") } };
   const { data: byEmail } = await db().from("people").select("id").eq("email", email).eq("active", true).maybeSingle();
   if (byEmail) return taken;
@@ -106,14 +114,15 @@ export async function addAdmin(input: AddAdminInput, actorId: string): Promise<A
     user = data.user;
   }
 
-  const row = { role: "admin", first_name: input.first_name, email, auth_user_id: user.id, slot_limit: null, key_hash: null, active: true };
+  const row = { role: "admin", event_id: eventId, first_name: input.first_name, email, auth_user_id: user.id, slot_limit: null, key_hash: null, active: true };
+  const fields = "id, first_name, phone_e164, event_id";
   const saved = byPhone
-    ? await db().from("people").update(row).eq("id", byPhone.id).select("id, first_name, phone_e164").single()
-    : await db().from("people").insert({ ...row, phone_e164: input.phone_e164 }).select("id, first_name, phone_e164").single();
+    ? await db().from("people").update(row).eq("id", byPhone.id).select(fields).single()
+    : await db().from("people").insert({ ...row, phone_e164: input.phone_e164 }).select(fields).single();
   if (saved.error || !saved.data) {
     throw new Error(/email|setup_hash|role/.test(saved.error?.message ?? "") ? MIGRATION_HINT : `Could not add the admin: ${saved.error?.message}`);
   }
-  await audit("admin", actorId, "admin_added", { admin: input.first_name, person_id: saved.data.id });
+  await audit("admin", actorId, "admin_added", { admin: input.first_name, person_id: saved.data.id }, null, eventId);
   return { ok: true, delivery: await issueLink(saved.data) };
 }
 
@@ -121,7 +130,7 @@ export async function addAdmin(input: AddAdminInput, actorId: string): Promise<A
 export async function newSetupLink(personId: string, actorId: string): Promise<SetupDelivery | null> {
   const { data } = await db()
     .from("people")
-    .select("id, first_name, phone_e164")
+    .select("id, first_name, phone_e164, event_id")
     .eq("id", personId)
     .eq("role", "admin")
     .eq("active", true)
@@ -139,11 +148,11 @@ export async function removeAdmin(personId: string, actorId: string): Promise<st
     .eq("id", personId)
     .eq("role", "admin")
     .eq("active", true)
-    .select("first_name, auth_user_id")
+    .select("first_name, auth_user_id, event_id")
     .maybeSingle();
   if (!data) return null;
   if (data.auth_user_id) await db().auth.admin.updateUserById(data.auth_user_id, { ban_duration: BANNED });
-  await audit("admin", actorId, "admin_removed", { admin: data.first_name, person_id: personId });
+  await audit("admin", actorId, "admin_removed", { admin: data.first_name, person_id: personId }, null, data.event_id as number | null);
   return data.first_name;
 }
 

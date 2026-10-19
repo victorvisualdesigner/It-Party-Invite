@@ -4,7 +4,7 @@ The app is one Next.js project. Vercel builds it straight from GitHub (`victorvi
 
 ## Before the first deploy
 
-- All three database migrations have run in Supabase, in order: `supabase/migrations/20261016000000_init.sql`, `20261017000000_guest_flow.sql` and `20261019000000_days_admins_accounts.sql`. The third adds multi-day events, holds up to 8760 hours, the superadmin and other admins, and removable payout accounts. It also makes the first admin the superadmin.
+- All four database migrations have run in Supabase, in order: `supabase/migrations/20261016000000_init.sql`, `20261017000000_guest_flow.sql`, `20261019000000_days_admins_accounts.sql` and `20261020000000_many_events.sql`. The third adds multi-day events, holds up to 8760 hours, the superadmin and removable payout accounts, and makes the first admin the superadmin. The fourth turns the app into many events: every row gets its event, the event that existed becomes event 1, and each event gets its own card design. Run it just before deploying the code that needs it.
 - In Supabase, go to Authentication > Sign In / Providers > Email and turn off "Allow new users to sign up". Only the seeded admin should ever sign in.
 - Add the payout account and fill in Event settings in the admin portal. Guests see these.
 

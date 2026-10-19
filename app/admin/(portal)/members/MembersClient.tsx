@@ -116,7 +116,14 @@ function AddMemberDialog({ onClose, onAdded }: { onClose: () => void; onAdded: (
           <span className="label" id="am-slots-label">
             {t("admin.members.slots_label")}
           </span>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <div className="seg" role="group" aria-labelledby="am-slots-label">
               <button type="button" aria-pressed={!unlimited} onClick={() => setUnlimited(false)}>
                 {t("admin.members.slots_number")}
@@ -189,9 +196,7 @@ function SlotSelect({ row }: { row: MemberRow }) {
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const options =
-    row.slotLimit != null && !SLOT_OPTIONS.includes(row.slotLimit)
-      ? [...SLOT_OPTIONS, row.slotLimit].sort((a, b) => a - b)
-      : SLOT_OPTIONS;
+    row.slotLimit != null && !SLOT_OPTIONS.includes(row.slotLimit) ? [...SLOT_OPTIONS, row.slotLimit].sort((a, b) => a - b) : SLOT_OPTIONS;
   return (
     <select
       className="input"
@@ -276,14 +281,21 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
                         <div className="meter">
                           <i
                             className={row.used >= total ? "gold" : ""}
-                            style={{ transform: `scaleX(${Math.min(1, row.used / Math.max(1, total)).toFixed(3)})` }}
+                            style={{
+                              transform: `scaleX(${Math.min(1, row.used / Math.max(1, total)).toFixed(3)})`,
+                            }}
                           />
                         </div>
                       )}
                       <small>
                         {unlimited
-                          ? t("admin.members.slots_used_unlimited", { used: row.used })
-                          : t("admin.members.slots_used", { used: row.used, total })}
+                          ? t("admin.members.slots_used_unlimited", {
+                              used: row.used,
+                            })
+                          : t("admin.members.slots_used", {
+                              used: row.used,
+                              total,
+                            })}
                       </small>
                     </div>
                   </td>
@@ -292,15 +304,17 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
                   </td>
                   <td>
                     <div className="row-actions">
-                      <button
-                        className="icon-btn"
-                        type="button"
-                        title={t("admin.members.reset_key")}
-                        aria-label={`${t("admin.members.reset_key")} ${row.firstName}`}
-                        onClick={() => setConfirm({ kind: "key", row })}
-                      >
-                        <Icon name="key" />
-                      </button>
+                      {isHost(row.role) ? null : (
+                        <button
+                          className="icon-btn"
+                          type="button"
+                          title={t("admin.members.reset_key")}
+                          aria-label={`${t("admin.members.reset_key")} ${row.firstName}`}
+                          onClick={() => setConfirm({ kind: "key", row })}
+                        >
+                          <Icon name="key" />
+                        </button>
+                      )}
                       {!isHost(row.role) ? (
                         <button
                           className="icon-btn"
@@ -333,7 +347,9 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
       {confirm?.kind === "remove" ? (
         <ConfirmDialog
           title={t("admin.members.remove")}
-          body={t("admin.members.remove_confirm", { member: confirm.row.firstName })}
+          body={t("admin.members.remove_confirm", {
+            member: confirm.row.firstName,
+          })}
           okLabel={t("admin.members.remove")}
           danger
           onOk={() => remove(confirm.row)}

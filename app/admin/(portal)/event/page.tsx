@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageTop } from "@/components/admin/PageTop";
-import { requireAdmin } from "@/lib/auth";
+import { requireEventAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { toLagosParts } from "@/lib/event";
 import type { EventInput } from "@/lib/schemas";
@@ -15,8 +15,8 @@ function lagosLocal(iso: string | null): string {
 }
 
 export default async function EventPage() {
-  const admin = await requireAdmin();
-  const event = await getEvent();
+  const admin = await requireEventAdmin();
+  const event = await getEvent(admin.eventId);
   const starts = toLagosParts(event.starts_at);
   const initial: EventInput = {
     name: event.name,
@@ -37,6 +37,7 @@ export default async function EventPage() {
     reveal_date_at: lagosLocal(event.reveal_date_at),
     reveal_venue_mode: event.reveal_venue_mode,
     reveal_venue_at: lagosLocal(event.reveal_venue_at),
+    card: { ...event.card },
   };
   return (
     <>

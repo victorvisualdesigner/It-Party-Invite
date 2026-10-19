@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageTop } from "@/components/admin/PageTop";
 import { InviteComposer } from "@/components/invite/InviteComposer";
-import { requireAdmin } from "@/lib/auth";
+import { requireEventAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { appUrl } from "@/lib/env";
 import { capacityInfo, sendBlocker } from "@/lib/invites";
@@ -13,9 +13,9 @@ import "../../../composer.css";
 export const metadata: Metadata = { title: t("admin.nav.invite") };
 
 export default async function InvitePage() {
-  const admin = await requireAdmin();
-  const event = await getEvent();
-  const inviter = { id: admin.id, role: admin.role, first_name: admin.first_name, slot_limit: null };
+  const admin = await requireEventAdmin();
+  const event = await getEvent(admin.eventId);
+  const inviter = { id: admin.id, role: admin.role, first_name: admin.first_name, slot_limit: null, event_id: admin.eventId };
   return (
     <>
       <PageTop title={t("admin.nav.invite")} subtitle={t("admin.invite.subtitle")} />

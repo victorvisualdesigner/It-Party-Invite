@@ -18,6 +18,37 @@ export type InviteStatus = (typeof INVITE_STATUSES)[number];
 /** Statuses that hold a slot and count towards capacity. */
 export const SLOT_STATUSES: InviteStatus[] = ["sent", "opened", "said_yes", "awaiting_confirmation", "paid"];
 
+export const CARD_THEMES = ["emerald", "midnight", "wine", "onyx"] as const;
+export const CARD_FOILS = ["gold", "silver", "rose"] as const;
+export const CARD_PAPERS = ["cream", "white", "blush"] as const;
+
+/** How the guest's card looks. Each event picks its own. */
+export type CardDesign = {
+  theme: (typeof CARD_THEMES)[number];
+  foil: (typeof CARD_FOILS)[number];
+  paper: (typeof CARD_PAPERS)[number];
+  /** A short line on the card, such as "Champagne on arrival". Empty for none. */
+  note: string;
+};
+
+/** The longest card note. Room for one line on a phone. */
+export const CARD_NOTE_MAX = 80;
+
+export const DEFAULT_CARD: CardDesign = { theme: "emerald", foil: "gold", paper: "cream", note: "" };
+
+/** Fills any missing or unknown choice with the default, so an old or odd row still renders. */
+export function cardDesign(raw: unknown): CardDesign {
+  const c = (raw && typeof raw === "object" ? raw : {}) as Partial<Record<keyof CardDesign, unknown>>;
+  const pick = <T extends readonly string[]>(list: T, v: unknown, d: T[number]): T[number] =>
+    typeof v === "string" && (list as readonly string[]).includes(v) ? (v as T[number]) : d;
+  return {
+    theme: pick(CARD_THEMES, c.theme, DEFAULT_CARD.theme),
+    foil: pick(CARD_FOILS, c.foil, DEFAULT_CARD.foil),
+    paper: pick(CARD_PAPERS, c.paper, DEFAULT_CARD.paper),
+    note: typeof c.note === "string" ? c.note.slice(0, CARD_NOTE_MAX) : "",
+  };
+}
+
 /** One day of a multi-day event. Empty name or dress code falls back to the event's own. */
 export type EventDay = { date: string; name: string; dress_code: string };
 
@@ -42,6 +73,8 @@ export type EventRow = {
   reveal_venue_at: string | null;
   invites_open: boolean;
   reference_prefix: string;
+  card: CardDesign;
+  created_at?: string;
 };
 
 export type Role = "superadmin" | "admin" | "member";
@@ -54,6 +87,8 @@ export function isHost(role: Role): boolean {
 export type Person = {
   id: string;
   role: Role;
+  /** The event this person belongs to. Null only for the superadmin, who sees every event. */
+  event_id: number | null;
   first_name: string;
   phone_e164: string;
   auth_user_id: string | null;
@@ -68,6 +103,7 @@ export type Person = {
 
 export type PayoutAccount = {
   id: string;
+  event_id: number;
   bank_name: string;
   account_number: string;
   account_name: string;
@@ -83,6 +119,7 @@ export const EXPIRABLE_STATUSES: InviteStatus[] = ["sent", "opened", "said_yes"]
 
 export type Invite = {
   id: string;
+  event_id: number;
   token: string;
   inviter_id: string;
   guest_first_name: string;
@@ -112,6 +149,7 @@ export type PaymentStatus = "open" | "claimed" | "confirmed" | "not_found" | "vo
 
 export type Payment = {
   id: string;
+  event_id: number;
   invite_id: string;
   payer_type: "guest" | "member";
   payer_person_id: string | null;

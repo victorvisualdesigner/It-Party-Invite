@@ -302,7 +302,9 @@
         "guests": "Guests",
         "payments": "Payments",
         "invite": "Invite"
-      }
+      },
+      "events": "All events",
+      "switch": "Switch event"
     },
     "common": {
       "_about": "Shared by every admin screen.",
@@ -461,7 +463,8 @@
         "date": "Add both the date and the start time.",
         "end_date": "Pick a last day after the first day.",
         "too_many_days": "An event can run for {n} days at most.",
-        "hold": "Use a whole number of hours from 1 to {max}."
+        "hold": "Use a whole number of hours from 1 to {max}.",
+        "card_note": "Keep the note to {n} characters."
       },
       "multi_day": "Runs over several days",
       "multi_day_help": "For events like 12 to 16 April.",
@@ -471,7 +474,32 @@
       "days_title": "Day by day",
       "days_help": "Give any day its own name or dress code. Leave a box empty to use the main one.",
       "day_name_label": "Name for {day}",
-      "day_dress_label": "Dress code for {day}"
+      "day_dress_label": "Dress code for {day}",
+      "card": {
+        "title": "Card design",
+        "help": "How the guest's card and ticket look. Only guests who unlock their invite see it.",
+        "theme_label": "Background",
+        "themes": {
+          "emerald": "Emerald",
+          "midnight": "Midnight",
+          "wine": "Wine",
+          "onyx": "Onyx"
+        },
+        "foil_label": "Foil",
+        "foils": {
+          "gold": "Gold",
+          "silver": "Silver",
+          "rose": "Rose gold"
+        },
+        "paper_label": "Card paper",
+        "papers": {
+          "cream": "Cream",
+          "white": "White",
+          "blush": "Blush"
+        },
+        "note_label": "A line on the card",
+        "note_help": "Optional. For example, Champagne on arrival."
+      }
     },
     "account": {
       "title": "Payout account",
@@ -599,7 +627,7 @@
       "copy_link": "Copy link",
       "copied": "Link copied.",
       "new_link": "New password link",
-      "link_message": "Hi {admin}, you're now a host for {event}. Set your password here: {link}",
+      "link_message": "Hi {admin}, you're now an admin for {event}. Set your password here: {link}",
       "empty": "Just you for now. Add someone to share the work.",
       "only_owner": "Only the super admin can add or remove admins.",
       "errors": {
@@ -620,6 +648,38 @@
       "errors": {
         "short": "Use at least 12 characters.",
         "match": "The two passwords don't match."
+      }
+    },
+    "events": {
+      "title": "All events",
+      "subtitle": "Every event on the platform, its numbers and who runs it.",
+      "create": "Create an event",
+      "create_title": "Create an event",
+      "name_label": "Event name",
+      "name_help": "You can change everything else under Event settings once you open it.",
+      "admin_title": "Its admin",
+      "admin_help": "Optional. Add the person who runs it now, or later.",
+      "save": "Create event",
+      "created": "{event} is ready. Open it to fill in the details.",
+      "open": "Open this event",
+      "current": "You're in this event",
+      "no_date": "No date yet",
+      "admins_title": "Admins",
+      "no_admins": "No admin yet. You run it yourself until you add one.",
+      "add_admin": "Add an admin",
+      "add_admin_title": "Add an admin to {event}",
+      "totals": "All events together",
+      "stats": {
+        "paid": "Paid",
+        "awaiting": "Awaiting",
+        "open": "Open invites",
+        "collected": "Collected",
+        "members": "Members",
+        "taps": "No taps"
+      },
+      "empty": "No events yet. Create the first one.",
+      "errors": {
+        "name": "Add the event name."
       }
     }
   }

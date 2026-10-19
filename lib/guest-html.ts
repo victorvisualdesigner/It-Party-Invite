@@ -103,10 +103,13 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 
   // State goes to the script as inert JSON. Escaping "<" keeps it from ever closing the script tag.
   const json = JSON.stringify(state).replace(/</g, "\\u003c");
+  // The event's card design, only once the guest is in. Before unlock the page wears the house colours.
+  const card = "event" in state ? state.event.card : null;
+  const design = card ? ` data-card-theme="${esc(card.theme)}" data-card-foil="${esc(card.foil)}" data-card-paper="${esc(card.paper)}"` : "";
   const ogImage = `${appUrl.replace(/\/+$/, "")}/og-envelope.png`;
 
   return `<!doctype html>
-<html lang="en">
+<html lang="en"${design}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -181,6 +184,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
     <p class="salute" id="salute"></p>
     <h2 class="display headline" id="card-headline"></h2>
     <dl class="details" id="card-details"></dl>
+    <p class="card-note" id="card-note" hidden></p>
     <div class="question">
       <span class="orn" aria-hidden="true"></span>
       <p class="q">${esc(t("guest.card.question"))}</p>
@@ -228,6 +232,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
           <h1 class="t-name" id="t-name"></h1>
           <p class="t-by" id="t-by"></p>
           <dl class="t-details" id="t-details"></dl>
+          <p class="t-note" id="t-note" hidden></p>
         </div>
         <div class="t-perf" aria-hidden="true"></div>
         <div class="t-stub">

@@ -69,13 +69,14 @@ export async function liveGuestPayment(inviteId: string): Promise<Payment | null
 export async function openGuestPayment(inv: Invite): Promise<Payment | null> {
   const existing = await liveGuestPayment(inv.id);
   if (existing) return existing;
-  const event = await getEvent();
-  const { data: account } = await db().from("payout_accounts").select("id").eq("active", true).maybeSingle();
+  const event = await getEvent(inv.event_id);
+  const { data: account } = await db().from("payout_accounts").select("id").eq("event_id", inv.event_id).eq("active", true).maybeSingle();
   if (!account) return null;
   for (let attempt = 0; attempt < 30; attempt++) {
     const { data, error } = await db()
       .from("payments")
       .insert({
+        event_id: inv.event_id,
         invite_id: inv.id,
         payer_type: "guest",
         reference: newReference(event.reference_prefix),
@@ -118,13 +119,14 @@ export async function openMemberPayment(inv: Invite, payerId: string): Promise<P
   if (inv.inviter_id !== payerId || inv.covered || ["paid", "cancelled", "expired", "draft"].includes(inv.status)) return null;
   const existing = await liveMemberPayment(inv.id);
   if (existing && existing.status !== "confirmed") return existing;
-  const event = await getEvent();
-  const { data: account } = await db().from("payout_accounts").select("id").eq("active", true).maybeSingle();
+  const event = await getEvent(inv.event_id);
+  const { data: account } = await db().from("payout_accounts").select("id").eq("event_id", inv.event_id).eq("active", true).maybeSingle();
   if (!account) return null;
   for (let attempt = 0; attempt < 30; attempt++) {
     const { data, error } = await db()
       .from("payments")
       .insert({
+        event_id: inv.event_id,
         invite_id: inv.id,
         payer_type: "member",
         payer_person_id: payerId,
@@ -159,8 +161,9 @@ export async function claimMemberPayment(paymentId: string, payerId: string, sen
 }
 
 /** Gives the invite its ticket code, retrying on the rare clash. */
-async function markPaid(inviteId: string, extra: Record<string, unknown> = {}): Promise<Invite | null> {
-  const event = await getEvent();
+async function markPaid(inv: Pick<Invite, "id" | "event_id">, extra: Record<string, unknown> = {}): Promise<Invite | null> {
+  const inviteId = inv.id;
+  const event = await getEvent(inv.event_id);
   for (let attempt = 0; attempt < 10; attempt++) {
     const { data, error } = await db()
       .from("invites")
@@ -199,7 +202,7 @@ export async function claimGuestPayment(inv: Invite, senderName: string): Promis
 
 /** Guest tapped Yes on an invite someone already paid for: straight to the card. */
 export async function paidByCover(inv: Invite): Promise<Invite | null> {
-  const paid = await markPaid(inv.id, { yes_at: inv.yes_at ?? new Date().toISOString() });
+  const paid = await markPaid(inv, { yes_at: inv.yes_at ?? new Date().toISOString() });
   if (paid) await audit("system", null, "paid", { covered: true }, inv.id);
   return paid;
 }
@@ -215,8 +218,8 @@ export type Claim = {
   duplicate: boolean;
 };
 
-export async function listClaims(): Promise<Claim[]> {
-  const { data } = await db().from("payments").select("*").eq("status", "claimed").order("claimed_at", { ascending: true });
+export async function listClaims(eventId: number): Promise<Claim[]> {
+  const { data } = await db().from("payments").select("*").eq("event_id", eventId).eq("status", "claimed").order("claimed_at", { ascending: true });
   const payments = (data ?? []) as Payment[];
   if (!payments.length) return [];
   const inviteIds = [...new Set(payments.map((p) => p.invite_id))];
@@ -255,11 +258,12 @@ function notify(inv: Invite): string {
  * The admin saw the money in the bank app. A guest payment unlocks the card. If the guest has not
  * tapped Yes yet (a transfer matched by hand), the invite is covered and turns paid on their Yes.
  */
-export async function confirmPayment(paymentId: string, adminId: string): Promise<ConfirmResult | null> {
+export async function confirmPayment(eventId: number, paymentId: string, adminId: string): Promise<ConfirmResult | null> {
   const { data } = await db()
     .from("payments")
     .update({ status: "confirmed", resolved_at: new Date().toISOString(), resolved_by: adminId })
     .eq("id", paymentId)
+    .eq("event_id", eventId)
     .eq("status", "claimed")
     .select("*")
     .maybeSingle();
@@ -269,7 +273,7 @@ export async function confirmPayment(paymentId: string, adminId: string): Promis
   if (!inv) return null;
   await audit("admin", adminId, "confirmed", { reference: p.reference }, inv.id);
   if (inv.yes_at) {
-    const paid = await markPaid(inv.id);
+    const paid = await markPaid(inv);
     if (paid) await audit("system", null, "paid", {}, inv.id);
     // Whoever did not pay no longer needs to: their unpaid transfer details stop working.
     await db().from("payments").update({ status: "void" }).eq("invite_id", inv.id).neq("id", p.id).in("status", ["open", "not_found"]);
@@ -280,11 +284,12 @@ export async function confirmPayment(paymentId: string, adminId: string): Promis
 }
 
 /** Not found: the guest goes back to the transfer screen and the clock resumes with at least 6 hours. */
-export async function notFoundPayment(paymentId: string, adminId: string): Promise<string | null> {
+export async function notFoundPayment(eventId: number, paymentId: string, adminId: string): Promise<string | null> {
   const { data } = await db()
     .from("payments")
     .update({ status: "not_found", resolved_at: new Date().toISOString(), resolved_by: adminId })
     .eq("id", paymentId)
+    .eq("event_id", eventId)
     .eq("status", "claimed")
     .select("*")
     .maybeSingle();
@@ -302,12 +307,13 @@ export async function notFoundPayment(paymentId: string, adminId: string): Promi
 export type MatchCandidate = { id: string; guest: string; inviter: string; status: Invite["status"]; reference: string | null };
 
 /** Invites that could own a transfer with no reference: search by guest name or the ticket amount. */
-export async function matchCandidates(query: string): Promise<MatchCandidate[]> {
+export async function matchCandidates(eventId: number, query: string): Promise<MatchCandidate[]> {
   const q = query.trim().toLowerCase();
-  const event = await getEvent();
+  const event = await getEvent(eventId);
   const { data } = await db()
     .from("invites")
     .select("id, guest_first_name, inviter_id, status")
+    .eq("event_id", eventId)
     .in("status", ["sent", "opened", "said_yes", "awaiting_confirmation"])
     .order("guest_first_name");
   const digits = q.replace(/\D/g, "");
@@ -315,7 +321,7 @@ export async function matchCandidates(query: string): Promise<MatchCandidate[]> 
   const rows = (data ?? []).filter((i) => !q || amountMatch || String(i.guest_first_name).toLowerCase().includes(q));
   const ids = rows.map((r) => r.id as string);
   const [{ data: people }, { data: payments }] = await Promise.all([
-    db().from("people").select("id, first_name"),
+    db().from("people").select("id, first_name").or(`event_id.eq.${eventId},event_id.is.null`),
     ids.length ? db().from("payments").select("invite_id, reference").in("invite_id", ids).in("status", LIVE_GUEST) : Promise.resolve({ data: [] as { invite_id: string; reference: string }[] }),
   ]);
   const nameOf = new Map((people ?? []).map((p) => [p.id as string, p.first_name as string]));
@@ -330,9 +336,9 @@ export async function matchCandidates(query: string): Promise<MatchCandidate[]> 
 }
 
 /** Confirms a transfer the admin matched by hand. */
-export async function manualConfirm(inviteId: string, adminId: string): Promise<ConfirmResult | null> {
+export async function manualConfirm(eventId: number, inviteId: string, adminId: string): Promise<ConfirmResult | null> {
   const inv = await getInvite(inviteId);
-  if (!inv || !["sent", "opened", "said_yes", "awaiting_confirmation"].includes(inv.status)) return null;
+  if (!inv || inv.event_id !== eventId || !["sent", "opened", "said_yes", "awaiting_confirmation"].includes(inv.status)) return null;
   let p = await liveGuestPayment(inv.id);
   if (!p) p = await openGuestPayment(inv);
   if (!p) return null;
@@ -341,5 +347,5 @@ export async function manualConfirm(inviteId: string, adminId: string): Promise<
     .update({ status: "claimed", claimed_at: p.claimed_at ?? new Date().toISOString() })
     .eq("id", p.id)
     .in("status", LIVE_GUEST);
-  return confirmPayment(p.id, adminId);
+  return confirmPayment(eventId, p.id, adminId);
 }

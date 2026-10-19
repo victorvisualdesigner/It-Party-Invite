@@ -4,7 +4,8 @@ import type { ActorType } from "@/lib/types";
 
 /**
  * Writes one audit_log row. A failed audit write is logged, never shown to the person acting,
- * because the action itself has already happened.
+ * because the action itself has already happened. Rows about an invite take the invite's event
+ * in the database; others name their event here.
  */
 export async function audit(
   actorType: ActorType,
@@ -12,9 +13,10 @@ export async function audit(
   action: string,
   details: Record<string, unknown> = {},
   inviteId: string | null = null,
+  eventId: number | null = null,
 ): Promise<void> {
   const { error } = await db()
     .from("audit_log")
-    .insert({ actor_type: actorType, actor_id: actorId, invite_id: inviteId, action, details });
+    .insert({ actor_type: actorType, actor_id: actorId, invite_id: inviteId, action, details, ...(eventId != null ? { event_id: eventId } : {}) });
   if (error) console.error("audit_log insert failed", action, error.message);
 }

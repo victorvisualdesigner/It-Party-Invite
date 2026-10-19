@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Tangerine, Unbounded, Urbanist } from "next/font/google";
 import { SealDefs } from "@/components/Seal";
 import "@/design/tokens.css";
+import "@/design/card-themes.css";
 import "./base.css";
 
 // Only the latin files are preloaded. The latin-ext and vietnamese files (the naira sign, and the

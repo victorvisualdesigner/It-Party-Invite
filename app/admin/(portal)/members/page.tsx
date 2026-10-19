@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageTop } from "@/components/admin/PageTop";
-import { requireAdmin } from "@/lib/auth";
+import { requireEventAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { listTeam } from "@/lib/people";
 import { localPhone } from "@/lib/phone";
@@ -9,8 +9,8 @@ import { AddMemberButton, MembersTable, type MemberRow } from "./MembersClient";
 export const metadata: Metadata = { title: t("admin.members.title") };
 
 export default async function MembersPage() {
-  await requireAdmin();
-  const team = await listTeam();
+  const admin = await requireEventAdmin();
+  const team = await listTeam(admin.eventId);
   const rows: MemberRow[] = team.map((p) => ({
     id: p.id,
     role: p.role,

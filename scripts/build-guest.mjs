@@ -19,7 +19,7 @@ const js = await transform(`window.OY_GUEST=${JSON.stringify(data)};\n${read("gu
   target: "es2017",
   legalComments: "none",
 });
-const css = await transform([read("design/tokens.css"), read("app/base.css"), read("guest/guest.css")].join("\n"), {
+const css = await transform([read("design/tokens.css"), read("design/card-themes.css"), read("app/base.css"), read("guest/guest.css")].join("\n"), {
   loader: "css",
   minify: true,
   target: ["chrome80", "safari13"],

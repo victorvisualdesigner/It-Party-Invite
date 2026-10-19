@@ -22,7 +22,8 @@ async function inviterName(id: string): Promise<string> {
   return (data?.first_name as string) ?? "";
 }
 
-export async function checkInCode(raw: string, adminId: string, at?: string): Promise<DoorResult> {
+/** Checks in a ticket of this event. A ticket from another event reads as not valid here. */
+export async function checkInCode(eventId: number, raw: string, adminId: string, at?: string): Promise<DoorResult> {
   const code = formatCode(normalizeTicketCode(raw));
   if (!code) return { kind: "invalid" };
   const when = at && !Number.isNaN(Date.parse(at)) && Date.parse(at) <= Date.now() ? at : new Date().toISOString();
@@ -30,6 +31,7 @@ export async function checkInCode(raw: string, adminId: string, at?: string): Pr
     .from("invites")
     .update({ checked_in_at: when })
     .eq("ticket_code", code)
+    .eq("event_id", eventId)
     .eq("status", "paid")
     .is("checked_in_at", null)
     .select("id, guest_first_name, inviter_id, checked_in_at")
@@ -38,15 +40,20 @@ export async function checkInCode(raw: string, adminId: string, at?: string): Pr
     await audit("admin", adminId, "checked_in", { offline: !!at }, data.id as string);
     return { kind: "valid", guest: data.guest_first_name as string, inviter: await inviterName(data.inviter_id as string), at: data.checked_in_at as string };
   }
-  const { data: inv } = await db().from("invites").select("guest_first_name, inviter_id, status, checked_in_at").eq("ticket_code", code).maybeSingle();
+  const { data: inv } = await db()
+    .from("invites")
+    .select("guest_first_name, inviter_id, status, checked_in_at")
+    .eq("ticket_code", code)
+    .eq("event_id", eventId)
+    .maybeSingle();
   if (!inv) return { kind: "invalid" };
   const inviter = await inviterName(inv.inviter_id as string);
   if (inv.status !== "paid") return { kind: "unpaid", guest: inv.guest_first_name as string, inviter };
   return { kind: "already", guest: inv.guest_first_name as string, inviter, at: inv.checked_in_at as string };
 }
 
-export async function checkInById(inviteId: string, adminId: string): Promise<DoorResult> {
-  const { data } = await db().from("invites").select("ticket_code").eq("id", inviteId).maybeSingle();
+export async function checkInById(eventId: number, inviteId: string, adminId: string): Promise<DoorResult> {
+  const { data } = await db().from("invites").select("ticket_code").eq("id", inviteId).eq("event_id", eventId).maybeSingle();
   if (!data?.ticket_code) return { kind: "invalid" };
-  return checkInCode(data.ticket_code as string, adminId);
+  return checkInCode(eventId, data.ticket_code as string, adminId);
 }

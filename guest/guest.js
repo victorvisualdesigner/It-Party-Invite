@@ -122,9 +122,22 @@
     var a = anim(from, [{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: "ease-out", fill: "forwards" });
     return a.finished.then(function () { enter(); a.cancel(); });
   }
+  // The event's card design: background, foil and paper. Only once the guest is in.
+  function applyDesign(s) {
+    var c = s && s.event && s.event.card, root = document.documentElement;
+    ["theme", "foil", "paper"].forEach(function (k) {
+      var a = "data-card-" + k;
+      if (c && c[k]) root.setAttribute(a, c[k]); else root.removeAttribute(a);
+    });
+  }
+  function noteInto(el, s) {
+    var n = s && s.event && s.event.card && s.event.card.note;
+    el.textContent = n || ""; el.hidden = !n;
+  }
   function route(s, opts) {
     opts = opts || {};
     state = s;
+    applyDesign(s);
     (RENDER[s.screen] || function () {})(s);
     return go(SCREEN[s.screen]).then(function () {
       if (s.screen === "lock" && opts.arrive) arrive();
@@ -161,6 +174,7 @@
       $("#salute").innerHTML = sal.split("").map(function (c) { return '<span class="ch" aria-hidden="true">' + esc(c) + "</span>"; }).join("");
       $("#card-headline").textContent = t("guest.card.headline", { inviter: s.inviter });
       $("#card-details").innerHTML = detailsHTML(s);
+      noteInto($("#card-note"), s);
       taps = Math.max(taps, s.taps || 0); growYes();
       var note = $("#later-note");
       if (s.status === "said_yes" && holdEnds(s)) { note.textContent = t("guest.transfer.not_now_note", { expires_at: fmtShort(holdEnds(s)) }); note.hidden = false; }
@@ -187,6 +201,7 @@
       $("#t-by").textContent = t("guest.ticket.invited_by", { inviter: s.inviter });
       $("#t-back-to").textContent = t("guest.card.letter_to", { guest: s.guest });
       $("#t-details").innerHTML = detailsHTML(s, true);
+      noteInto($("#t-note"), s);
       $("#qr").innerHTML = s.qr || "";
       $("#t-code").textContent = s.ticket_code || "";
       var n = s.taps || 0;
@@ -794,9 +809,11 @@
       });
       add(t("guest.card.days_label"), dayParts);
     } else if (ev.dress) add(t("guest.card.dress_label"), [{ font: VALUE, color: "--mist-100", lines: wrap(ev.dress, VALUE, VW) }]);
-    var lineH = function (font) { return parseInt(font.split(" ")[1], 10) * 1.3; };
+    var lineH = function (font) { return parseInt(/(\d+)px/.exec(font)[1], 10) * 1.3; };
     var rowsTop = 606, y = rowsTop;
     rows.forEach(function (r) { r.y = y; r.parts.forEach(function (p) { y += (p.gap || 0) + p.lines.length * lineH(p.font); }); y += 46; });
+    var NOTE = "italic 400 34px " + UI, note = ev.card && ev.card.note ? wrap(ev.card.note, NOTE, W - 180) : [], noteY = y + 10;
+    y += note.length ? note.length * lineH(NOTE) + 24 : 0;
     var Hh = Math.max(1160, Math.round(y + 30 + STUB));
 
     var c = document.createElement("canvas"); c.width = W; c.height = Hh;
@@ -831,6 +848,7 @@
         yy += p.lines.length * lineH(p.font);
       });
     });
+    if (note.length) { x.fillStyle = v("--gold-300"); x.font = NOTE; note.forEach(function (l, i) { x.fillText(l, 90, noteY + i * lineH(NOTE)); }); }
     x.setLineDash([14, 12]); x.strokeStyle = "rgba(200,162,74,.4)"; x.lineWidth = 3;
     x.beginPath(); x.moveTo(60, Hh - STUB); x.lineTo(W - 60, Hh - STUB); x.stroke(); x.setLineDash([]);
     var qx = 90, qy = Hh - STUB + 70, qs = 300;

@@ -8,8 +8,41 @@ import { t, tList } from "@/lib/copy";
 import { daysDiffer, eventDates, eventDays, formatDayLabel, formatEventWhen, fromLagos, isRevealed, revealHint } from "@/lib/event";
 import { formatNaira, nairaToKobo } from "@/lib/money";
 import type { EventInput } from "@/lib/schemas";
-import { REVEAL_MODES, type RevealMode } from "@/lib/types";
+import { CARD_FOILS, CARD_NOTE_MAX, CARD_PAPERS, CARD_THEMES, REVEAL_MODES, type RevealMode } from "@/lib/types";
 import { saveEvent } from "./actions";
+
+/** One row of round colour swatches; a radio group underneath, so keys and screen readers work. */
+function Swatches<T extends string>({
+  label,
+  name,
+  options,
+  value,
+  labelOf,
+  onPick,
+}: {
+  label: string;
+  name: string;
+  options: readonly T[];
+  value: T;
+  labelOf: (o: T) => string;
+  onPick: (o: T) => void;
+}) {
+  return (
+    <fieldset className="swatches">
+      <legend>{label}</legend>
+      <div className="swatch-row">
+        {options.map((o) => (
+          <label key={o} className={o === value ? "swatch on" : "swatch"}>
+            <input type="radio" name={`card-${name}`} value={o} checked={o === value} onChange={() => onPick(o)} />
+            {/* The dot wears the same token overrides as the guest page, so it shows the real colour. */}
+            <span className={`dot dot-${name}`} {...{ [`data-card-${name}`]: o }} aria-hidden="true" />
+            <span>{labelOf(o)}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 // Which input to focus for each server error key.
 const FIELD_IDS: Record<string, string> = {
@@ -22,6 +55,7 @@ const FIELD_IDS: Record<string, string> = {
   unopened_expiry_days: "e-unopened",
   reveal_date_at: "e-rd-at",
   reveal_venue_at: "e-rv-at",
+  card_note: "e-note",
 };
 
 function Field({ id, label, help, error, children }: { id: string; label: string; help?: string; error?: string; children: ReactNode }) {
@@ -55,7 +89,13 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
   const venueShown = isRevealed(v.reveal_venue_mode, venueAt, false);
   const kobo = nairaToKobo(v.price || "0") ?? 0;
   const endDate = v.end_date || null;
-  const days = eventDays({ starts_at: startsAt, end_date: endDate, days: v.days, name: v.name.trim(), dress_code: v.dress_code.trim() });
+  const days = eventDays({
+    starts_at: startsAt,
+    end_date: endDate,
+    days: v.days,
+    name: v.name.trim(),
+    dress_code: v.dress_code.trim(),
+  });
   const showDays = days.length > 1 && daysDiffer(days, { name: v.name.trim(), dress_code: v.dress_code.trim() });
   return (
     <div className="pv-card">
@@ -64,10 +104,16 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
       <h3>{t("guest.card.headline", { inviter: hostName })}</h3>
       <dl>
         <dt>{t("guest.card.date_label")}</dt>
-        <dd className={dateShown ? "" : "muted"}>{dateShown && startsAt ? formatEventWhen(startsAt, endDate) : t("guest.card.date_hidden")}</dd>
+        <dd className={dateShown ? "" : "muted"}>
+          {dateShown && startsAt ? formatEventWhen(startsAt, endDate) : t("guest.card.date_hidden")}
+        </dd>
         <dt>{t("guest.card.venue_label")}</dt>
         <dd className={venueShown ? "" : "muted"}>
-          {venueShown ? v.venue_name : t("guest.card.venue_hidden", { venue_reveal_hint: revealHint(v.reveal_venue_mode, venueAt, startsAt) })}
+          {venueShown
+            ? v.venue_name
+            : t("guest.card.venue_hidden", {
+                venue_reveal_hint: revealHint(v.reveal_venue_mode, venueAt, startsAt),
+              })}
         </dd>
         {showDays ? (
           <>
@@ -93,6 +139,7 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
         <dt>{t("guest.card.price_label")}</dt>
         <dd className="price">{formatNaira(kobo)}</dd>
       </dl>
+      {v.card.note.trim() ? <p className="pv-note">{v.card.note.trim()}</p> : null}
       <p className="q">{t("guest.card.question")}</p>
       <div className="yn" aria-hidden="true">
         <span className="y">{t("guest.card.yes")}</span>
@@ -122,7 +169,12 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
     onChange: (e: { target: { value: string } }) => set(key, e.target.value as never),
   });
   const invalid = (key: string) =>
-    errors[key] ? { "aria-invalid": true as const, "aria-describedby": `${FIELD_IDS[key]}-err` } : {};
+    errors[key]
+      ? {
+          "aria-invalid": true as const,
+          "aria-describedby": `${FIELD_IDS[key]}-err`,
+        }
+      : {};
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -226,7 +278,9 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
                       <input
                         className="input"
                         autoComplete="off"
-                        aria-label={t("admin.event.day_name_label", { day: tag })}
+                        aria-label={t("admin.event.day_name_label", {
+                          day: tag,
+                        })}
                         placeholder={v.name.trim() || t("admin.event.name_label")}
                         value={day.name}
                         onChange={(e) => setDay(date, { name: e.target.value })}
@@ -234,7 +288,9 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
                       <input
                         className="input"
                         autoComplete="off"
-                        aria-label={t("admin.event.day_dress_label", { day: tag })}
+                        aria-label={t("admin.event.day_dress_label", {
+                          day: tag,
+                        })}
                         placeholder={v.dress_code.trim() || t("admin.event.dress_label")}
                         value={day.dress_code}
                         onChange={(e) => setDay(date, { dress_code: e.target.value })}
@@ -255,6 +311,48 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
           </div>
           <Field id="e-dress" label={multi ? t("admin.event.dress_label_main") : t("admin.event.dress_label")}>
             <input className="input" id="e-dress" autoComplete="off" {...text("dress_code")} />
+          </Field>
+        </section>
+
+        <section className="card fieldset" aria-labelledby="sec-card">
+          <h2 id="sec-card">{t("admin.event.card.title")}</h2>
+          <p className="help" style={{ margin: "-4px 0 4px" }}>
+            {t("admin.event.card.help")}
+          </p>
+          <Swatches
+            label={t("admin.event.card.theme_label")}
+            name="theme"
+            options={CARD_THEMES}
+            value={v.card.theme}
+            labelOf={(o) => t(`admin.event.card.themes.${o}` as never)}
+            onPick={(o) => set("card", { ...v.card, theme: o })}
+          />
+          <Swatches
+            label={t("admin.event.card.foil_label")}
+            name="foil"
+            options={CARD_FOILS}
+            value={v.card.foil}
+            labelOf={(o) => t(`admin.event.card.foils.${o}` as never)}
+            onPick={(o) => set("card", { ...v.card, foil: o })}
+          />
+          <Swatches
+            label={t("admin.event.card.paper_label")}
+            name="paper"
+            options={CARD_PAPERS}
+            value={v.card.paper}
+            labelOf={(o) => t(`admin.event.card.papers.${o}` as never)}
+            onPick={(o) => set("card", { ...v.card, paper: o })}
+          />
+          <Field id="e-note" label={t("admin.event.card.note_label")} help={t("admin.event.card.note_help")} error={errors.card_note}>
+            <input
+              className="input"
+              id="e-note"
+              autoComplete="off"
+              maxLength={CARD_NOTE_MAX}
+              value={v.card.note}
+              onChange={(e) => set("card", { ...v.card, note: e.target.value })}
+              {...invalid("card_note")}
+            />
           </Field>
         </section>
 
@@ -279,7 +377,13 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
             </Field>
             <Field id="e-hold" label={t("admin.event.hold_label")} help={t("admin.event.hold_help")} error={errors.hold_window_hours}>
               <div className="suffix">
-                <input className="input num" inputMode="numeric" id="e-hold" {...text("hold_window_hours")} {...invalid("hold_window_hours")} />
+                <input
+                  className="input num"
+                  inputMode="numeric"
+                  id="e-hold"
+                  {...text("hold_window_hours")}
+                  {...invalid("hold_window_hours")}
+                />
                 <span>{t("admin.event.hours")}</span>
               </div>
             </Field>
@@ -287,7 +391,13 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
           <div className="cols">
             <Field id="e-unopened" label={t("admin.event.unopened_label")} error={errors.unopened_expiry_days}>
               <div className="suffix">
-                <input className="input num" inputMode="numeric" id="e-unopened" {...text("unopened_expiry_days")} {...invalid("unopened_expiry_days")} />
+                <input
+                  className="input num"
+                  inputMode="numeric"
+                  id="e-unopened"
+                  {...text("unopened_expiry_days")}
+                  {...invalid("unopened_expiry_days")}
+                />
                 <span>{t("admin.event.days")}</span>
               </div>
             </Field>
@@ -345,7 +455,7 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
         <p className="eyebrow" style={{ color: "var(--gold-700)" }}>
           {t("admin.event.preview_title")}
         </p>
-        <div className="stage">
+        <div className="stage" data-card-theme={v.card.theme} data-card-foil={v.card.foil} data-card-paper={v.card.paper}>
           <Preview v={v} hostName={hostName} />
         </div>
         <p className="help">{t("admin.event.preview_help")}</p>

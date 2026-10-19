@@ -1,0 +1,42 @@
+/*
+  Card designs. Each event picks a background, a foil and a card paper (lib/types.ts CardDesign).
+  The guest page sets data-card-theme, data-card-foil and data-card-paper on <html> once the
+  envelope is unlocked; the admin's preview sets them on the preview box. Every value here is
+  a replacement for a token in tokens.css, so components keep reading the same names.
+  Emerald, Gold and Cream are the defaults in tokens.css and need no rules.
+*/
+
+/* Backgrounds */
+[data-card-theme="midnight"] {
+  --green-950: #070E1C; --green-900: #0C182D; --green-850: #11203A; --green-800: #142744; --green-700: #1F375C;
+  --green-680: #1A2F50; --green-650: #1A3152; --green-600: #23406B;
+  --mist-100: #E8EDF5; --mist-400: #9DABC2;
+}
+[data-card-theme="wine"] {
+  --green-950: #18090D; --green-900: #260E16; --green-850: #30121D; --green-800: #3A1622; --green-700: #552233;
+  --green-680: #4A1C2B; --green-650: #461A28; --green-600: #642A3C;
+  --mist-100: #F4E9EC; --mist-400: #C2A2AB;
+}
+[data-card-theme="onyx"] {
+  --green-950: #0A0A0B; --green-900: #121213; --green-850: #171719; --green-800: #1D1D20; --green-700: #2B2B30;
+  --green-680: #262629; --green-650: #222225; --green-600: #38383F;
+  --mist-100: #EEEDEA; --mist-400: #A7A49D;
+}
+
+/* Foils */
+[data-card-foil="silver"] {
+  --gold-300: #E4E7EB; --gold-400: #CBD0D7; --gold-500: #AAB1BB; --gold-600: #8D949F; --gold-700: #5C636D;
+  --foil-dark: #7C838E; --foil-light: #F5F7F9;
+}
+[data-card-foil="rose"] {
+  --gold-300: #F2CFC2; --gold-400: #E3B09F; --gold-500: #CB8E7B; --gold-600: #B07261; --gold-700: #874C3C;
+  --foil-dark: #9B5E4D; --foil-light: #F9E1D7;
+}
+
+/* Card paper */
+[data-card-paper="white"] {
+  --cream-50: #FFFFFF; --cream-100: #FAF9F7; --cream-200: #E7E5E0; --paper-card-edge: #EEECE7;
+}
+[data-card-paper="blush"] {
+  --cream-50: #FFF7F4; --cream-100: #F8EAE5; --cream-200: #EBD4CD; --paper-card-edge: #EFD9D2;
+}

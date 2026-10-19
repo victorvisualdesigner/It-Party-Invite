@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageTop } from "@/components/admin/PageTop";
-import { requireAdmin } from "@/lib/auth";
+import { requireEventAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { groupAccountNumber } from "@/lib/event";
 import { listAccounts } from "@/lib/settings";
@@ -9,8 +9,8 @@ import { AddAccountForm, DeleteAccountButton, MakeActiveButton } from "./Account
 export const metadata: Metadata = { title: t("admin.account.title") };
 
 export default async function AccountPage() {
-  await requireAdmin();
-  const accounts = await listAccounts();
+  const admin = await requireEventAdmin();
+  const accounts = await listAccounts(admin.eventId);
   return (
     <>
       <PageTop title={t("admin.account.title")} subtitle={t("admin.account.subtitle")} />

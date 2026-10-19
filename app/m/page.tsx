@@ -21,10 +21,10 @@ function greetingKey(): "member.home.greeting_morning" | "member.home.greeting_a
 // No event details show until the member is recognised.
 export default async function MemberPage() {
   const member = await currentMember();
-  const event = await getEvent();
+  const event = member ? await getEvent(member.event_id) : null;
   const slots = member ? await slotInfo(member) : null;
   const blocker = member ? await sendBlocker(member, 1) : null;
-  const nearlyFull = member ? (await capacityInfo(event)).nearlyFull : false;
+  const nearlyFull = member && event ? (await capacityInfo(event)).nearlyFull : false;
   const linkHost = new URL(appUrl()).host;
   const total = slots && !slots.unlimited ? (slots.total as number) : 0;
   const STATUS: Record<string, string> = {
@@ -54,7 +54,7 @@ export default async function MemberPage() {
         {member ? (
           <span className="brand">
             <LogoMark size={30} />
-            <span>{event.name}</span>
+            <span>{event?.name}</span>
           </span>
         ) : (
           <Logo size={34} />

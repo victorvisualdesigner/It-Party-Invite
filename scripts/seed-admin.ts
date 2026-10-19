@@ -1,4 +1,4 @@
-// Creates the first admin and the single event row. Safe to run again.
+// Creates the superadmin and the first event, or resets a host's password. Safe to run again.
 //
 //   npm run seed:admin
 //   npm run seed:admin -- --email host@example.com --first-name Tolu --phone "0803 111 0001" --event-name "Only Yes"
@@ -110,7 +110,7 @@ async function main() {
   const phone = normalizePhone(await ask("Your phone number: ", flags.phone));
   if (!phone) throw new Error("That number doesn't look right. Try it with the first 0, like 0803 123 4567.");
 
-  const { data: existingEvent, error: eventError } = await supabase.from("event").select("name").eq("id", 1).maybeSingle();
+  const { data: existingEvent, error: eventError } = await supabase.from("event").select("name").order("id").limit(1).maybeSingle();
   if (eventError) throw new Error(`Could not read the event table. Did you run npm run db:push? (${eventError.message})`);
   const eventName = existingEvent
     ? existingEvent.name
@@ -130,27 +130,33 @@ async function main() {
     console.log(`Auth user created for ${email.data}.`);
   }
 
-  // 2. The admin row in people. Admins are always Unlimited.
-  const { data: byAuth } = await supabase.from("people").select("id").eq("auth_user_id", user.id).maybeSingle();
-  const { data: byPhone } = await supabase.from("people").select("id, role, auth_user_id").eq("phone_e164", phone).maybeSingle();
+  // 2. The host row in people. Someone already there (the superadmin, or an event admin resetting
+  //    their password) keeps their role and event. Anyone new becomes the superadmin, who sees every event.
+  const { data: byAuth } = await supabase.from("people").select("id, event_id").eq("auth_user_id", user.id).maybeSingle();
+  const { data: byPhone } = await supabase
+    .from("people")
+    .select("id")
+    .eq("phone_e164", phone)
+    .is("event_id", byAuth?.event_id ?? null)
+    .maybeSingle();
   if (byPhone && byPhone.id !== byAuth?.id) {
     throw new Error(`${localPhone(phone)} already belongs to someone else on the team. Use a different number.`);
   }
-  // The seeded admin is the superadmin: the one who adds and removes other admins.
-  const row = { role: "superadmin", first_name: firstName, phone_e164: phone, auth_user_id: user.id, slot_limit: null, active: true };
   const { error: peopleError } = byAuth
-    ? await supabase.from("people").update(row).eq("id", byAuth.id)
-    : await supabase.from("people").insert(row);
+    ? await supabase.from("people").update({ first_name: firstName, phone_e164: phone, active: true }).eq("id", byAuth.id)
+    : await supabase
+        .from("people")
+        .insert({ role: "superadmin", event_id: null, first_name: firstName, phone_e164: phone, auth_user_id: user.id, slot_limit: null, active: true });
   if (peopleError) throw new Error(`Could not save the admin: ${peopleError.message}`);
   console.log(`Admin ${firstName} (${localPhone(phone)}) is ${byAuth ? "updated" : "ready"}.`);
 
-  // 3. The single event row.
+  // 3. The first event, when there is none yet. More are created under All events.
   if (existingEvent) {
     console.log(`Event "${existingEvent.name}" already exists. Left as it is.`);
   } else {
     const { error } = await supabase
       .from("event")
-      .insert({ id: 1, name: eventName, reference_prefix: derivePrefix(eventName) ?? "OY" });
+      .insert({ name: eventName, reference_prefix: derivePrefix(eventName) ?? "OY" });
     if (error) throw new Error(`Could not create the event: ${error.message}`);
     console.log(`Event "${eventName}" created. Fill in the rest under Event settings.`);
   }

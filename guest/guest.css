@@ -68,6 +68,7 @@ body {
 .details .days li, .t-details .days li { display: grid; gap: 1px; }
 .details .days b, .t-details .days b { font-weight: var(--weight-ui-strong); }
 .details .days small { display: block; color: var(--ink-600); font-size: 13px; }
+.card-note { margin: 16px 0 0; font-style: italic; font-size: 15px; line-height: 1.45; color: var(--gold-700); text-align: center; text-wrap: balance; }
 .question { margin-top: 24px; padding-top: 22px; text-align: center; position: relative; }
 .question::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--cream-200); }
 .question .orn { position: absolute; left: 50%; top: -7px; width: 14px; height: 14px; transform: translateX(-50%) rotate(45deg); background: var(--cream-100); border: 1px solid rgba(143, 114, 48, 0.55); }
@@ -153,6 +154,7 @@ body {
 .t-details dd small { display: block; color: var(--mist-400); font-size: 13px; }
 .t-details dd.muted { color: var(--mist-400); font-style: italic; }
 .t-details .days small { display: block; color: var(--mist-400); font-size: 13px; }
+.t-note { margin: 16px 0 0; font-style: italic; font-size: 14px; line-height: 1.45; color: var(--gold-300); }
 .t-perf { position: absolute; left: 18px; right: 18px; bottom: var(--stub); border-top: 1.5px dashed rgba(200, 162, 74, 0.4); }
 .t-stub { height: var(--stub); display: flex; align-items: center; gap: 18px; padding: 0 26px; }
 .qr { flex: none; width: 120px; height: 120px; padding: 9px; border-radius: 12px; background: var(--cream-50); color: var(--ink-900); }

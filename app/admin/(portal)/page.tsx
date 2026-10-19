@@ -4,7 +4,7 @@ import { PageTop } from "@/components/admin/PageTop";
 import { Icon, type IconName } from "@/components/Icon";
 import { MiniSeal } from "@/components/Seal";
 import { overview } from "@/lib/admin-data";
-import { requireAdmin } from "@/lib/auth";
+import { requireEventAdmin } from "@/lib/auth";
 import { t, tList } from "@/lib/copy";
 import { getEvent } from "@/lib/settings";
 import { timeAgo } from "@/lib/time";
@@ -21,9 +21,9 @@ const ACT: Record<string, [IconName, string]> = {
 };
 
 export default async function OverviewPage() {
-  await requireAdmin();
-  const event = await getEvent();
-  const s = await overview(event.capacity);
+  const admin = await requireEventAdmin();
+  const event = await getEvent(admin.eventId);
+  const s = await overview(admin.eventId, event.capacity);
   const cap = s.capacity ? Math.min(1, s.capacityUsed / s.capacity) : 0;
   const labels = tList("admin.overview.funnel");
   const max = Math.max(1, s.funnel[0]);
