@@ -22,6 +22,8 @@ export default async function EventPage() {
     name: event.name,
     date: starts.date,
     time: starts.time,
+    end_date: event.end_date ?? "",
+    days: event.days.map((d) => ({ date: d.date, name: d.name ?? "", dress_code: d.dress_code ?? "" })),
     venue_name: event.venue_name,
     venue_address: event.venue_address,
     dress_code: event.dress_code,

@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { groupAccountNumber } from "@/lib/event";
 import { listAccounts } from "@/lib/settings";
-import { AddAccountForm, MakeActiveButton } from "./AccountControls";
+import { AddAccountForm, DeleteAccountButton, MakeActiveButton } from "./AccountControls";
 
 export const metadata: Metadata = { title: t("admin.account.title") };
 
@@ -27,7 +27,10 @@ export default async function AccountPage() {
               </div>
               <div className="acct">{groupAccountNumber(a.account_number)}</div>
               <div className="name">{a.account_name}</div>
-              {a.active ? null : <MakeActiveButton accountId={a.id} />}
+              <div className="bank-acts">
+                {a.active ? null : <MakeActiveButton accountId={a.id} />}
+                <DeleteAccountButton accountId={a.id} bank={a.bank_name} number={groupAccountNumber(a.account_number)} active={a.active} />
+              </div>
             </article>
           ))}
         </div>

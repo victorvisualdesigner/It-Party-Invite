@@ -7,10 +7,10 @@ import { t } from "@/lib/copy";
 import { db, isUniqueViolation } from "@/lib/db";
 import { appUrl } from "@/lib/env";
 import { generateKey, hashKey } from "@/lib/keys";
-import { assembleMessage, randomCombo, randomKeyLine } from "@/lib/messages";
+import { assembleMessage, randomCombo, randomCoveredLine, randomKeyLine } from "@/lib/messages";
 import { localPhone, maskPhone } from "@/lib/phone";
 import { getEvent } from "@/lib/settings";
-import { EXPIRABLE_STATUSES, SLOT_STATUSES, type ActorType, type EventRow, type Invite, type Person } from "@/lib/types";
+import { EXPIRABLE_STATUSES, isHost, SLOT_STATUSES, type ActorType, type EventRow, type Invite, type Person } from "@/lib/types";
 import { smsLink, waLink } from "@/lib/whatsapp";
 
 const HOUR = 3600e3;
@@ -99,7 +99,7 @@ export async function slotInfo(inviter: Inviter): Promise<SlotInfo> {
     .eq("inviter_id", inviter.id)
     .in("status", SLOT_STATUSES);
   const used = count ?? 0;
-  const unlimited = inviter.role === "admin" || inviter.slot_limit == null;
+  const unlimited = isHost(inviter.role) || inviter.slot_limit == null;
   const total = unlimited ? null : (inviter.slot_limit as number);
   return { used, total, left: unlimited ? Number.POSITIVE_INFINITY : Math.max(0, (total as number) - used), unlimited };
 }
@@ -127,7 +127,8 @@ export async function sendBlocker(inviter: Inviter, n = 1): Promise<string | nul
 
 /* ---------- Drafts ---------- */
 
-export type DraftRow = { first_name: string; phone_e164: string };
+/** `pay`: the inviter covers this guest. A member then transfers; a host simply lets them in free. */
+export type DraftRow = { first_name: string; phone_e164: string; pay?: boolean };
 
 export type DraftView = {
   id: string;
@@ -138,9 +139,15 @@ export type DraftView = {
   message: string;
   waHref: string;
   smsHref: string;
+  /** The inviter is covering this guest. */
+  paying: boolean;
 };
 
-function draftMessage(inv: Pick<Invite, "token" | "guest_first_name" | "message_combo" | "key_line_index">, inviterName: string, key: string): string {
+function draftMessage(
+  inv: Pick<Invite, "token" | "guest_first_name" | "message_combo" | "key_line_index" | "covered_line_index">,
+  inviterName: string,
+  key: string,
+): string {
   return assembleMessage({
     guest: inv.guest_first_name,
     inviter: inviterName,
@@ -148,6 +155,7 @@ function draftMessage(inv: Pick<Invite, "token" | "guest_first_name" | "message_
     key,
     combo: inv.message_combo,
     keyLine: inv.key_line_index,
+    coveredLine: inv.covered_line_index,
   });
 }
 
@@ -163,6 +171,7 @@ function toDraftView(inv: Invite, inviterName: string): DraftView {
     message,
     waHref: waLink(inv.guest_phone_e164, message),
     smsHref: smsLink(inv.guest_phone_e164, message),
+    paying: inv.covered_line_index != null,
   };
 }
 
@@ -181,6 +190,7 @@ async function insertDraft(inviter: Inviter, row: DraftRow): Promise<Invite> {
         key_plain_draft: key,
         message_combo: randomCombo(),
         key_line_index: randomKeyLine(),
+        covered_line_index: row.pay ? randomCoveredLine() : null,
         status: "draft",
       })
       .select("*")
@@ -275,13 +285,16 @@ export async function sendDraft(inviteId: string, inviter: Inviter, actor: Actor
   if (blocker) return { ok: false, message: blocker };
   const event = await getEvent();
   const now = new Date();
+  // A host covering a guest needs no transfer: the guest is covered from the moment it goes out.
+  const comp = isHost(inviter.role) && draft.covered_line_index != null;
   const { data, error } = await db()
     .from("invites")
     .update({
       status: "sent",
       sent_at: now.toISOString(),
-      expires_at: new Date(now.getTime() + event.unopened_expiry_days * DAY).toISOString(),
+      expires_at: comp ? null : new Date(now.getTime() + event.unopened_expiry_days * DAY).toISOString(),
       key_plain_draft: null,
+      ...(comp ? { covered: true } : {}),
     })
     .eq("id", inviteId)
     .eq("status", "draft")
@@ -289,7 +302,7 @@ export async function sendDraft(inviteId: string, inviter: Inviter, actor: Actor
     .maybeSingle();
   if (isUniqueViolation(error)) return { ok: false, message: t("member.new_invite.duplicate_error") };
   if (error) throw new Error(`Could not send: ${error.message}`);
-  if (data) await audit(actor, inviter.id, "sent", { guest: draft.guest_first_name }, inviteId);
+  if (data) await audit(actor, inviter.id, "sent", { guest: draft.guest_first_name, covered_by_host: comp }, inviteId);
   return { ok: true };
 }
 

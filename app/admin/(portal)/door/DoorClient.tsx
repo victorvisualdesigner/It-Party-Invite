@@ -102,6 +102,18 @@ export function DoorScreen({ initial }: { initial: DoorGuest[] }) {
     };
   }, [sync]);
 
+  // Which button is working right now, so it can show a spinner and ignore a second tap.
+  const [busy, setBusy] = useState<string | null>(null);
+  async function working(key: string, run: () => Promise<unknown>) {
+    if (busy) return;
+    setBusy(key);
+    try {
+      await run();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function handle(r: DoorResult & { queued?: boolean }) {
     setResult(r);
     try {
@@ -204,7 +216,7 @@ export function DoorScreen({ initial }: { initial: DoorGuest[] }) {
       <section className="card scan">
         <div className="toolbar" style={{ padding: 0, border: 0, justifyContent: "space-between" }}>
           {offline ? <span className="quiet">{t("admin.door.offline")}</span> : <span />}
-          <button className="btn btn-ghost btn-sm" type="button" onClick={download}>
+          <button className="btn btn-ghost btn-sm" type="button" disabled={busy === "download"} aria-busy={busy === "download"} onClick={() => working("download", download)}>
             <Icon name="download" />
             <span>{t("admin.door.download")}</span>
           </button>
@@ -221,7 +233,7 @@ export function DoorScreen({ initial }: { initial: DoorGuest[] }) {
           ) : (
             <div className="idle">
               <Icon name="qr" />
-              <button className="btn btn-gold" type="button" onClick={scan}>
+              <button className="btn btn-gold" type="button" disabled={busy === "scan"} aria-busy={busy === "scan"} onClick={() => working("scan", scan)}>
                 {t("admin.door.scan")}
               </button>
             </div>
@@ -232,14 +244,14 @@ export function DoorScreen({ initial }: { initial: DoorGuest[] }) {
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            checkCode(code);
+            working("code", () => checkCode(code));
           }}
         >
           <label className="sr" htmlFor="d-code">
             {t("admin.door.code_placeholder")}
           </label>
           <input className="input" id="d-code" placeholder={t("admin.door.code_placeholder")} autoComplete="off" autoCapitalize="characters" value={code} onChange={(e) => setCode(e.target.value)} />
-          <button className="btn btn-gold" type="submit">
+          <button className="btn btn-gold" type="submit" disabled={busy === "code"} aria-busy={busy === "code"}>
             {t("admin.door.check")}
           </button>
         </form>
@@ -288,7 +300,7 @@ export function DoorScreen({ initial }: { initial: DoorGuest[] }) {
                     {t("admin.door.inside")} {fmtTime(g.checkedInAt)}
                   </span>
                 ) : (
-                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => checkGuest(g)}>
+                  <button className="btn btn-ghost btn-sm" type="button" disabled={busy === g.id} aria-busy={busy === g.id} onClick={() => working(g.id, () => checkGuest(g))}>
                     {t("admin.door.check")}
                   </button>
                 )}

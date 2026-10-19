@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Pinyon_Script, Plus_Jakarta_Sans, Unbounded, Urbanist } from "next/font/google";
+import { Plus_Jakarta_Sans, Tangerine, Unbounded, Urbanist } from "next/font/google";
 import { SealDefs } from "@/components/Seal";
 import "@/design/tokens.css";
 import "./base.css";
@@ -13,11 +13,11 @@ const display = Unbounded({
   variable: "--font-unbounded-face",
 });
 
-const script = Pinyon_Script({
+const script = Tangerine({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "700"],
   display: "swap",
-  variable: "--font-pinyon-face",
+  variable: "--font-tangerine-face",
 });
 
 const ui = Urbanist({

@@ -94,6 +94,70 @@ export async function openGuestPayment(inv: Invite): Promise<Payment | null> {
   throw new Error("Could not find an unused reference.");
 }
 
+/* ---------- A member pays for their guest ---------- */
+
+/** The member's payment for this invite that is still in play, newest first. */
+export async function liveMemberPayment(inviteId: string): Promise<Payment | null> {
+  const { data } = await db()
+    .from("payments")
+    .select("*")
+    .eq("invite_id", inviteId)
+    .eq("payer_type", "member")
+    .in("status", ["open", "claimed", "not_found", "confirmed"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as Payment | null) ?? null;
+}
+
+/**
+ * Opens (or reuses) the member's payment for one of their guests. Returns null when the guest
+ * no longer needs paying for, or when there is no payout account yet.
+ */
+export async function openMemberPayment(inv: Invite, payerId: string): Promise<Payment | null> {
+  if (inv.inviter_id !== payerId || inv.covered || ["paid", "cancelled", "expired", "draft"].includes(inv.status)) return null;
+  const existing = await liveMemberPayment(inv.id);
+  if (existing && existing.status !== "confirmed") return existing;
+  const event = await getEvent();
+  const { data: account } = await db().from("payout_accounts").select("id").eq("active", true).maybeSingle();
+  if (!account) return null;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const { data, error } = await db()
+      .from("payments")
+      .insert({
+        invite_id: inv.id,
+        payer_type: "member",
+        payer_person_id: payerId,
+        reference: newReference(event.reference_prefix),
+        amount_kobo: event.price_kobo,
+        account_id: account.id,
+        status: "open",
+      })
+      .select("*")
+      .single();
+    if (!error && data) return data as Payment;
+    if (!isUniqueViolation(error)) throw new Error(`Could not open the payment: ${error?.message}`);
+  }
+  throw new Error("Could not find an unused reference.");
+}
+
+/** The member tapped I've sent it: the payment joins the admin's queue. */
+export async function claimMemberPayment(paymentId: string, payerId: string, senderName: string): Promise<Payment | null> {
+  const { data } = await db()
+    .from("payments")
+    .update({ status: "claimed", sender_name: senderName, claimed_at: new Date().toISOString(), resolved_at: null, resolved_by: null })
+    .eq("id", paymentId)
+    .eq("payer_type", "member")
+    .eq("payer_person_id", payerId)
+    .in("status", ["open", "not_found", "claimed"])
+    .select("*")
+    .maybeSingle();
+  if (!data) return null;
+  const p = data as Payment;
+  await audit("member", payerId, "claimed", { reference: p.reference, by_member: true }, p.invite_id);
+  return p;
+}
+
 /** Gives the invite its ticket code, retrying on the rare clash. */
 async function markPaid(inviteId: string, extra: Record<string, unknown> = {}): Promise<Invite | null> {
   const event = await getEvent();
@@ -207,6 +271,8 @@ export async function confirmPayment(paymentId: string, adminId: string): Promis
   if (inv.yes_at) {
     const paid = await markPaid(inv.id);
     if (paid) await audit("system", null, "paid", {}, inv.id);
+    // Whoever did not pay no longer needs to: their unpaid transfer details stop working.
+    await db().from("payments").update({ status: "void" }).eq("invite_id", inv.id).neq("id", p.id).in("status", ["open", "not_found"]);
     return { guest: inv.guest_first_name, cardReady: true, notifyHref: notify(inv) };
   }
   await db().from("invites").update({ covered: true, expires_at: null, hold_remaining_ms: null }).eq("id", inv.id);

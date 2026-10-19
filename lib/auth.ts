@@ -15,7 +15,7 @@ export const AUTH_COOKIE_OPTIONS = {
   path: "/",
 };
 
-export type Admin = { id: string; first_name: string; phone_e164: string };
+export type Admin = { id: string; first_name: string; phone_e164: string; role: "superadmin" | "admin" };
 
 /** A Supabase client bound to this request's auth cookies. */
 export async function authClient() {
@@ -46,9 +46,9 @@ export const getAdmin = cache(async (): Promise<Admin | null> => {
 export async function adminForAuthUser(authUserId: string): Promise<Admin | null> {
   const { data } = await db()
     .from("people")
-    .select("id, first_name, phone_e164")
+    .select("id, first_name, phone_e164, role")
     .eq("auth_user_id", authUserId)
-    .eq("role", "admin")
+    .in("role", ["superadmin", "admin"])
     .eq("active", true)
     .maybeSingle();
   return (data as Admin | null) ?? null;
@@ -58,5 +58,12 @@ export async function adminForAuthUser(authUserId: string): Promise<Admin | null
 export async function requireAdmin(): Promise<Admin> {
   const admin = await getAdmin();
   if (!admin) redirect("/admin/login");
+  return admin;
+}
+
+/** Only the superadmin adds and removes admins. Others are sent back to the overview. */
+export async function requireSuperadmin(): Promise<Admin> {
+  const admin = await requireAdmin();
+  if (admin.role !== "superadmin") redirect("/admin");
   return admin;
 }

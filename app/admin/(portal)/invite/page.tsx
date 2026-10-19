@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: t("admin.nav.invite") };
 export default async function InvitePage() {
   const admin = await requireAdmin();
   const event = await getEvent();
-  const inviter = { id: admin.id, role: "admin" as const, first_name: admin.first_name, slot_limit: null };
+  const inviter = { id: admin.id, role: admin.role, first_name: admin.first_name, slot_limit: null };
   return (
     <>
       <PageTop title={t("admin.nav.invite")} subtitle={t("admin.invite.subtitle")} />
@@ -27,6 +27,7 @@ export default async function InvitePage() {
           nearlyFull={(await capacityInfo(event)).nearlyFull}
           linkHost={new URL(appUrl()).host}
           maxRows={MAX_GUESTS_PER_BATCH}
+          payMode="host"
           createAction={createAdminInvites}
           shuffleAction={shuffleAdminDraft}
           sendAction={sendAdminDraft}

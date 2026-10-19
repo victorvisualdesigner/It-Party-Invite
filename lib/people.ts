@@ -7,7 +7,7 @@ import { appUrl } from "@/lib/env";
 import { generateKey, hashKey } from "@/lib/keys";
 import type { MemberValues } from "@/lib/schemas";
 import { getEvent } from "@/lib/settings";
-import { SLOT_STATUSES, type InviteStatus, type Person } from "@/lib/types";
+import { isHost, SLOT_STATUSES, type InviteStatus, type Person } from "@/lib/types";
 import { waLink } from "@/lib/whatsapp";
 
 export type TeamRow = Pick<Person, "id" | "role" | "first_name" | "phone_e164" | "slot_limit" | "created_at"> & {
@@ -38,7 +38,7 @@ export async function listTeam(): Promise<TeamRow[]> {
   }
   return ((people ?? []) as TeamRow[])
     .map((p) => ({ ...p, used: used.get(p.id) ?? 0, paid: paid.get(p.id) ?? 0 }))
-    .sort((a, b) => (a.role === b.role ? 0 : a.role === "admin" ? -1 : 1));
+    .sort((a, b) => Number(!isHost(a.role)) - Number(!isHost(b.role)));
 }
 
 async function keyDelivery(person: Pick<Person, "id" | "first_name" | "phone_e164">, key: string): Promise<KeyDelivery> {
@@ -61,7 +61,7 @@ export async function addMember(values: MemberValues, adminId: string): Promise<
     .select("id, role, active")
     .eq("phone_e164", values.phone_e164)
     .maybeSingle();
-  if (existing && (existing.active || existing.role === "admin")) return duplicate;
+  if (existing && (existing.active || isHost(existing.role))) return duplicate;
 
   const key = generateKey();
   const keyHash = await hashKey(key);

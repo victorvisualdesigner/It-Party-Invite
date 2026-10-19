@@ -5,7 +5,7 @@ import { Icon } from "@/components/Icon";
 import type { FieldErrors } from "@/lib/action";
 import { callAction } from "@/lib/client-action";
 import { t, tList } from "@/lib/copy";
-import { formatEventDate, fromLagos, isRevealed, revealHint } from "@/lib/event";
+import { daysDiffer, eventDates, eventDays, formatDayLabel, formatEventWhen, fromLagos, isRevealed, revealHint } from "@/lib/event";
 import { formatNaira, nairaToKobo } from "@/lib/money";
 import type { EventInput } from "@/lib/schemas";
 import { REVEAL_MODES, type RevealMode } from "@/lib/types";
@@ -15,6 +15,7 @@ import { saveEvent } from "./actions";
 const FIELD_IDS: Record<string, string> = {
   name: "e-name",
   date: "e-date",
+  end_date: "e-end",
   price: "e-price",
   capacity: "e-cap",
   hold_window_hours: "e-hold",
@@ -53,6 +54,9 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
   const dateShown = isRevealed(v.reveal_date_mode, dateAt, false) && !!startsAt;
   const venueShown = isRevealed(v.reveal_venue_mode, venueAt, false);
   const kobo = nairaToKobo(v.price || "0") ?? 0;
+  const endDate = v.end_date || null;
+  const days = eventDays({ starts_at: startsAt, end_date: endDate, days: v.days, name: v.name.trim(), dress_code: v.dress_code.trim() });
+  const showDays = days.length > 1 && daysDiffer(days, { name: v.name.trim(), dress_code: v.dress_code.trim() });
   return (
     <div className="pv-card">
       <p className="ev">{v.name.trim() || " "}</p>
@@ -60,13 +64,32 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
       <h3>{t("guest.card.headline", { inviter: hostName })}</h3>
       <dl>
         <dt>{t("guest.card.date_label")}</dt>
-        <dd className={dateShown ? "" : "muted"}>{dateShown && startsAt ? formatEventDate(startsAt) : t("guest.card.date_hidden")}</dd>
+        <dd className={dateShown ? "" : "muted"}>{dateShown && startsAt ? formatEventWhen(startsAt, endDate) : t("guest.card.date_hidden")}</dd>
         <dt>{t("guest.card.venue_label")}</dt>
         <dd className={venueShown ? "" : "muted"}>
           {venueShown ? v.venue_name : t("guest.card.venue_hidden", { venue_reveal_hint: revealHint(v.reveal_venue_mode, venueAt, startsAt) })}
         </dd>
-        <dt>{t("guest.card.dress_label")}</dt>
-        <dd>{v.dress_code}</dd>
+        {showDays ? (
+          <>
+            <dt>{t("guest.card.days_label")}</dt>
+            <dd>
+              <ul className="pv-days">
+                {days.map((d) => (
+                  <li key={d.date}>
+                    <b>{dateShown ? d.label : t("guest.card.day_n", { n: d.number })}</b>
+                    {d.name !== v.name.trim() ? <span>{d.name}</span> : null}
+                    {d.dress ? <small>{t("guest.card.day_dress", { dress: d.dress })}</small> : null}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </>
+        ) : (
+          <>
+            <dt>{t("guest.card.dress_label")}</dt>
+            <dd>{v.dress_code}</dd>
+          </>
+        )}
         <dt>{t("guest.card.price_label")}</dt>
         <dd className="price">{formatNaira(kobo)}</dd>
       </dl>
@@ -81,6 +104,7 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
 
 export function EventForm({ initial, hostName }: { initial: EventInput; hostName: string }) {
   const [v, setV] = useState<EventInput>(initial);
+  const [multi, setMulti] = useState(!!initial.end_date);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -134,6 +158,19 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
     });
   }
 
+  const startIso = fromLagos(v.date, v.time || "00:00");
+  const dates = multi && v.end_date ? eventDates(startIso, v.end_date) : [];
+  const dayOf = (date: string) => v.days.find((d) => d.date === date) ?? { date, name: "", dress_code: "" };
+  function setDay(date: string, patch: { name?: string; dress_code?: string }) {
+    const next = { ...dayOf(date), ...patch };
+    set("days", [...v.days.filter((d) => d.date !== date), next]);
+  }
+  function toggleMulti(on: boolean) {
+    setMulti(on);
+    if (!on) set("end_date", "");
+    else requestAnimationFrame(() => document.getElementById("e-end")?.focus());
+  }
+
   const modeSelect = (id: string, key: "reveal_date_mode" | "reveal_venue_mode") => (
     <select className="input" id={id} value={v[key]} onChange={(e) => set(key, e.target.value as RevealMode)}>
       {REVEAL_MODES.map((m, i) => (
@@ -153,13 +190,61 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
             <input className="input" id="e-name" autoComplete="off" {...text("name")} {...invalid("name")} />
           </Field>
           <div className="cols">
-            <Field id="e-date" label={t("admin.event.date_label")} error={errors.date}>
+            <Field id="e-date" label={multi ? t("admin.event.first_day_label") : t("admin.event.date_label")} error={errors.date}>
               <input className="input" type="date" id="e-date" {...text("date")} {...invalid("date")} />
             </Field>
             <Field id="e-time" label={t("admin.event.time_label")}>
               <input className="input" type="time" id="e-time" {...text("time")} aria-invalid={errors.date ? true : undefined} />
             </Field>
           </div>
+          <label className="switch" htmlFor="e-multi">
+            <span>
+              <b style={{ fontWeight: 600 }}>{t("admin.event.multi_day")}</b>
+              <small>{t("admin.event.multi_day_help")}</small>
+            </span>
+            <input type="checkbox" id="e-multi" checked={multi} onChange={(e) => toggleMulti(e.target.checked)} />
+          </label>
+          {multi ? (
+            <Field id="e-end" label={t("admin.event.end_date_label")} error={errors.end_date}>
+              <input className="input" type="date" id="e-end" min={v.date || undefined} {...text("end_date")} {...invalid("end_date")} />
+            </Field>
+          ) : null}
+          {dates.length > 1 ? (
+            <div className="days-edit">
+              <p className="days-title">{t("admin.event.days_title")}</p>
+              <p className="help">{t("admin.event.days_help")}</p>
+              <ol>
+                {dates.map((date, i) => {
+                  const day = dayOf(date);
+                  const tag = `${t("guest.card.day_n", { n: i + 1 })}, ${formatDayLabel(date)}`;
+                  return (
+                    <li key={date}>
+                      <span className="day-tag">
+                        <b>{t("guest.card.day_n", { n: i + 1 })}</b>
+                        <small>{formatDayLabel(date)}</small>
+                      </span>
+                      <input
+                        className="input"
+                        autoComplete="off"
+                        aria-label={t("admin.event.day_name_label", { day: tag })}
+                        placeholder={v.name.trim() || t("admin.event.name_label")}
+                        value={day.name}
+                        onChange={(e) => setDay(date, { name: e.target.value })}
+                      />
+                      <input
+                        className="input"
+                        autoComplete="off"
+                        aria-label={t("admin.event.day_dress_label", { day: tag })}
+                        placeholder={v.dress_code.trim() || t("admin.event.dress_label")}
+                        value={day.dress_code}
+                        onChange={(e) => setDay(date, { dress_code: e.target.value })}
+                      />
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ) : null}
           <div className="cols">
             <Field id="e-venue" label={t("admin.event.venue_label")}>
               <input className="input" id="e-venue" autoComplete="off" {...text("venue_name")} />
@@ -168,7 +253,7 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
               <input className="input" id="e-addr" autoComplete="off" {...text("venue_address")} />
             </Field>
           </div>
-          <Field id="e-dress" label={t("admin.event.dress_label")}>
+          <Field id="e-dress" label={multi ? t("admin.event.dress_label_main") : t("admin.event.dress_label")}>
             <input className="input" id="e-dress" autoComplete="off" {...text("dress_code")} />
           </Field>
         </section>

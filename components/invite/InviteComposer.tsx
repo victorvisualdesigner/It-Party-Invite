@@ -3,13 +3,17 @@
 // The invite composer: one or more guests at once, each with its own library message, link and key.
 // Members use it on /m (number and key on the same page, no portal); the admin uses it under
 // Invite someone. Nobody can type or edit a message: Shuffle is the only control.
+// Two clear steps: 1, who's coming (and whether you pay for them); 2, send each invite.
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { Envelope } from "@/components/Envelope";
 import { Icon } from "@/components/Icon";
 import { MiniSeal } from "@/components/Seal";
+import { PaySheet, type ClaimPayResult, type OpenPayResult } from "@/components/invite/PaySheet";
+import { SubmitButton } from "@/components/SubmitButton";
 import type { FieldErrors } from "@/lib/action";
 import { callAction } from "@/lib/client-action";
 import { t } from "@/lib/copy";
+import { formatKeyTyping } from "@/lib/key-typing";
 import { formatPhoneTyping } from "@/lib/phone-typing";
 
 export type DraftView = {
@@ -21,11 +25,12 @@ export type DraftView = {
   message: string;
   waHref: string;
   smsHref: string;
+  paying: boolean;
 };
 
 export type ComposerSlots = { left: number | null; total: number | null; unlimited: boolean };
 
-export type CreateInput = { phone?: string; key?: string; guests: { first_name: string; phone: string }[] };
+export type CreateInput = { phone?: string; key?: string; guests: { first_name: string; phone: string; pay: boolean }[] };
 
 type Fail = { ok: false; errors?: FieldErrors; message?: string; network?: boolean; identity?: { name: string; slots: ComposerSlots } };
 export type CreateResult = { ok: true; data: { drafts: DraftView[]; name: string; slots: ComposerSlots } } | Fail;
@@ -39,14 +44,33 @@ type Props = {
   nearlyFull: boolean;
   linkHost: string;
   maxRows: number;
+  /** "member": paying means a transfer right after sending. "host": paying means they get in free. */
+  payMode: "member" | "host";
   createAction: (input: CreateInput) => Promise<CreateResult>;
   shuffleAction: (id: string) => Promise<ShuffleResult>;
   sendAction: (id: string) => Promise<SendResult>;
   signOutAction?: () => Promise<void>;
+  openPayAction?: (inviteId: string) => Promise<OpenPayResult>;
+  claimPayAction?: (paymentId: string, senderName: string) => Promise<ClaimPayResult>;
 };
 
-type Row = { first_name: string; phone: string };
-const emptyRow = (): Row => ({ first_name: "", phone: "" });
+type Row = { first_name: string; phone: string; pay: boolean };
+const emptyRow = (): Row => ({ first_name: "", phone: "", pay: false });
+
+function Steps({ at }: { at: 1 | 2 }) {
+  return (
+    <ol className="steps-bar" aria-label={t("member.new_invite.step_label", { n: at })}>
+      <li className={at === 1 ? "on" : "done"} aria-current={at === 1 ? "step" : undefined}>
+        <span>{at === 1 ? "1" : <Icon name="check" />}</span>
+        {t("member.new_invite.step_who")}
+      </li>
+      <li className={at === 2 ? "on" : ""} aria-current={at === 2 ? "step" : undefined}>
+        <span>2</span>
+        {t("member.new_invite.step_send")}
+      </li>
+    </ol>
+  );
+}
 
 function Preview({ d, linkHost }: { d: DraftView; linkHost: string }) {
   const [body = "", link = "", keyLine = ""] = d.message.split("\n\n");
@@ -101,17 +125,25 @@ function Preview({ d, linkHost }: { d: DraftView; linkHost: string }) {
 function DraftCard({
   d,
   sent,
+  sending,
   error,
   linkHost,
+  canPay,
+  paid,
   onShuffle,
   onSend,
+  onPay,
 }: {
   d: DraftView;
   sent: boolean;
+  sending: boolean;
   error: string | null;
   linkHost: string;
+  canPay: boolean;
+  paid: boolean;
   onShuffle: () => Promise<void>;
   onSend: () => void;
+  onPay: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
@@ -128,13 +160,17 @@ function DraftCard({
     onSend();
   }
   return (
-    <li className="draft">
+    <li className={sent ? "draft is-sent" : "draft"}>
       <div className="draft-head">
         <div>
           <b>{d.guest}</b>
           <small>{d.phone}</small>
         </div>
-        {sent ? <span className="chip chip-opened">{t("member.status.sent")}</span> : null}
+        {sent ? (
+          <span className="chip chip-opened">
+            {t("member.status.sent")}
+          </span>
+        ) : null}
       </div>
       <Preview d={d} linkHost={linkHost} />
       <div className="draft-tools">
@@ -158,19 +194,41 @@ function DraftCard({
           {error}
         </p>
       ) : null}
-      <div className="stack">
-        <a className="btn btn-gold btn-wide cta" href={d.waHref} target="_blank" rel="noopener noreferrer" onClick={onSend}>
+      <div className="send-stack">
+        <a
+          className={sent ? "btn btn-ghost btn-wide" : "btn btn-gold btn-wide cta"}
+          href={d.waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-busy={sending || undefined}
+          onClick={onSend}
+        >
           <Icon name="whatsapp" />
-          <span>{t("member.new_invite.send")}</span>
+          <span>{sent ? t("member.new_invite.send_again") : t("member.new_invite.send")}</span>
         </a>
-        <a className="btn btn-ghost btn-wide" href={d.smsHref} onClick={onSend}>
-          <Icon name="sms" />
-          <span>{t("member.new_invite.send_sms")}</span>
-        </a>
-        <button className="btn btn-quiet" type="button" onClick={copy}>
-          <Icon name="copy" />
-          <span>{copied ? t("member.new_invite.copied") : t("member.new_invite.copy_message")}</span>
-        </button>
+        <div className="send-alt">
+          <a className="btn btn-ghost btn-sm" href={d.smsHref} onClick={onSend}>
+            <Icon name="sms" />
+            <span>{t("member.new_invite.send_sms")}</span>
+          </a>
+          <button className="btn btn-ghost btn-sm" type="button" onClick={copy}>
+            <Icon name={copied ? "check" : "copy"} />
+            <span>{copied ? t("member.new_invite.copied") : t("member.new_invite.copy_message")}</span>
+          </button>
+        </div>
+        {canPay && sent ? (
+          paid ? (
+            <p className="pay-note">
+              <Icon name="check" />
+              <span>{t("member.pay_sheet.claimed_chip")}</span>
+            </p>
+          ) : (
+            <button className="btn btn-gold btn-wide" type="button" onClick={onPay}>
+              <Icon name="card" />
+              <span>{t("member.new_invite.pay_button", { guest: d.guest })}</span>
+            </button>
+          )
+        ) : null}
       </div>
     </li>
   );
@@ -187,11 +245,15 @@ export function InviteComposer(props: Props) {
   const [formError, setFormError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<DraftView[] | null>(null);
   const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [sending, setSending] = useState<Record<string, boolean>>({});
   const [sendErrors, setSendErrors] = useState<Record<string, string>>({});
+  const [paying, setPaying] = useState<DraftView | null>(null);
+  const [paid, setPaid] = useState<Record<string, boolean>>({});
   const [pending, startTransition] = useTransition();
 
   const limit = Math.min(props.maxRows, slots && !slots.unlimited && slots.left != null ? Math.max(1, slots.left) : props.maxRows);
   const blocked = !!props.blocker && !!identity;
+  const memberPays = props.payMode === "member" && !!props.openPayAction && !!props.claimPayAction;
 
   function setRow(i: number, patch: Partial<Row>) {
     setRows((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -210,7 +272,9 @@ export function InviteComposer(props: Props) {
         setSlots(result.data.slots);
         setErrors({});
         setSent({});
+        setSending({});
         setSendErrors({});
+        setPaid({});
         setDrafts(result.data.drafts);
         window.scrollTo(0, 0);
         return;
@@ -224,6 +288,7 @@ export function InviteComposer(props: Props) {
       const next = fail.errors ?? {};
       setErrors(next);
       if (next.form) setFormError(next.form);
+      else if (fail.message) setFormError(fail.message);
       const first = Object.keys(next).find((k) => k !== "form");
       if (first) document.getElementById(`f-${first.replace(/\./g, "-")}`)?.focus();
     });
@@ -236,7 +301,10 @@ export function InviteComposer(props: Props) {
 
   function send(id: string) {
     // The link opens in WhatsApp at once; the server records the send alongside.
+    if (sent[id] || sending[id]) return;
+    setSending((prev) => ({ ...prev, [id]: true }));
     callAction(() => props.sendAction(id)).then((result) => {
+      setSending((prev) => ({ ...prev, [id]: false }));
       if (result.ok) {
         setSent((prev) => ({ ...prev, [id]: true }));
         setSendErrors((prev) => ({ ...prev, [id]: "" }));
@@ -264,25 +332,39 @@ export function InviteComposer(props: Props) {
   const invalid = (key: string) =>
     errors[key] ? { "aria-invalid": true as const, "aria-describedby": `f-${key.replace(/\./g, "-")}-err` } : {};
 
-  /* ---------- Ready to send ---------- */
+  /* ---------- Step 2: send ---------- */
   if (drafts) {
-    const allSent = drafts.every((d) => sent[d.id]);
+    const count = drafts.filter((d) => sent[d.id]).length;
+    const allSent = count === drafts.length;
     return (
       <div className="composer">
+        <Steps at={2} />
         <div className="head">
           <h1 className="display">{t("member.new_invite.ready_title")}</h1>
           <p>{t("member.new_invite.ready_help")}</p>
         </div>
+        {drafts.length > 1 ? (
+          <div className="progress" role="status">
+            <span>{t("member.new_invite.sent_progress", { sent: count, total: drafts.length })}</span>
+            <i aria-hidden="true">
+              <b style={{ transform: `scaleX(${(count / drafts.length).toFixed(3)})` }} />
+            </i>
+          </div>
+        ) : null}
         <ul className="drafts">
           {drafts.map((d) => (
             <DraftCard
               key={d.id}
               d={d}
               sent={!!sent[d.id]}
+              sending={!!sending[d.id]}
               error={sendErrors[d.id] || null}
               linkHost={props.linkHost}
+              canPay={memberPays && d.paying}
+              paid={!!paid[d.id]}
               onShuffle={() => shuffle(d.id)}
               onSend={() => send(d.id)}
+              onPay={() => setPaying(d)}
             />
           ))}
         </ul>
@@ -290,19 +372,36 @@ export function InviteComposer(props: Props) {
           <div className="sent">
             <MiniSeal letter="✓" />
             <p>{t("member.new_invite.all_sent")}</p>
+            <button className="btn btn-gold btn-wide cta" type="button" onClick={again}>
+              <Icon name="plus" />
+              <span>{t("member.new_invite.another")}</span>
+            </button>
           </div>
+        ) : (
+          <button className="btn btn-quiet start-over" type="button" onClick={again}>
+            <Icon name="back" />
+            <span>{t("member.new_invite.start_over")}</span>
+          </button>
+        )}
+        {paying && props.openPayAction && props.claimPayAction ? (
+          <PaySheet
+            inviteId={paying.id}
+            guest={paying.guest}
+            openAction={props.openPayAction}
+            claimAction={props.claimPayAction}
+            onClose={() => setPaying(null)}
+            onClaimed={() => setPaid((prev) => ({ ...prev, [paying.id]: true }))}
+          />
         ) : null}
-        <button className={allSent ? "btn btn-gold btn-wide cta" : "btn btn-ghost btn-wide"} type="button" onClick={again}>
-          <Icon name="plus" />
-          <span>{t("member.new_invite.another")}</span>
-        </button>
       </div>
     );
   }
 
-  /* ---------- Who's coming ---------- */
+  /* ---------- Step 1: who's coming ---------- */
+  const many = rows.length > 1;
   return (
     <div className="composer">
+      <Steps at={1} />
       <div className="head">
         <h1 className="display">{t("member.new_invite.title")}</h1>
         {identity ? null : <p>{t("member.login.body")}</p>}
@@ -313,15 +412,15 @@ export function InviteComposer(props: Props) {
         <div className="who-bar">
           <span>{t("member.new_invite.inviting_as", { member: identity.name })}</span>
           <form action={props.signOutAction}>
-            <button className="btn btn-quiet btn-sm" type="submit">
+            <SubmitButton className="btn btn-quiet btn-sm">
               {t("member.home.not_you")} {t("member.login.signout")}
-            </button>
+            </SubmitButton>
           </form>
         </div>
       ) : null}
       <form className="form" noValidate onSubmit={submit}>
         {identity ? null : (
-          <>
+          <div className="me-fields">
             <div className="field">
               <label htmlFor="f-me-phone">{t("member.login.phone_label")}</label>
               <input
@@ -346,12 +445,15 @@ export function InviteComposer(props: Props) {
                 spellCheck={false}
                 placeholder={t("guest.lock.key_placeholder")}
                 value={me.key}
-                onChange={(e) => setMe((m) => ({ ...m, key: e.target.value }))}
+                onChange={(e) => {
+                  const el = e.target;
+                  setMe((m) => ({ ...m, key: el.selectionStart === el.value.length ? formatKeyTyping(el.value) : el.value.toUpperCase() }));
+                }}
                 {...invalid("identity")}
               />
               {err("identity")}
             </div>
-          </>
+          </div>
         )}
 
         <ol className="guest-rows">
@@ -359,9 +461,14 @@ export function InviteComposer(props: Props) {
             <li key={i}>
               <div className="row-head">
                 <b>{t("member.new_invite.guest_label", { n: i + 1 })}</b>
-                {rows.length > 1 ? (
-                  <button className="btn btn-quiet btn-sm" type="button" onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))}>
-                    {t("member.new_invite.remove_row")}
+                {many ? (
+                  <button
+                    className="icon-btn"
+                    type="button"
+                    aria-label={`${t("member.new_invite.remove_row")} ${t("member.new_invite.guest_label", { n: i + 1 })}`}
+                    onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))}
+                  >
+                    <Icon name="x" />
                   </button>
                 ) : null}
               </div>
@@ -398,12 +505,19 @@ export function InviteComposer(props: Props) {
                   {err(`rows.${i}.phone`)}
                 </div>
               </div>
+              <label className="switch pay-switch" htmlFor={`f-rows-${i}-pay`}>
+                <span>
+                  <b>{props.payMode === "host" ? t("member.new_invite.comp_toggle") : t("member.new_invite.pay_toggle")}</b>
+                  <small>{props.payMode === "host" ? t("member.new_invite.comp_help") : t("member.new_invite.pay_help")}</small>
+                </span>
+                <input type="checkbox" id={`f-rows-${i}-pay`} checked={row.pay} onChange={(e) => setRow(i, { pay: e.target.checked })} />
+              </label>
             </li>
           ))}
         </ol>
-        <span className="help">{t("member.new_invite.phone_help")}</span>
+        <p className="help">{t("member.new_invite.phone_help")}</p>
         {rows.length < limit ? (
-          <button className="btn btn-ghost btn-sm add-row" type="button" onClick={() => setRows((prev) => [...prev, emptyRow()])}>
+          <button className="add-row" type="button" onClick={() => setRows((prev) => [...prev, emptyRow()])}>
             <Icon name="plus" />
             <span>{t("member.new_invite.add_row")}</span>
           </button>
@@ -414,7 +528,8 @@ export function InviteComposer(props: Props) {
           </p>
         ) : null}
         <button className="btn btn-gold btn-wide cta" type="submit" disabled={pending || blocked} aria-busy={pending}>
-          {pending ? t("member.new_invite.writing") : rows.length > 1 ? t("member.new_invite.continue_many") : t("member.new_invite.continue")}
+          {pending ? t("member.new_invite.writing") : many ? t("member.new_invite.continue_many", { n: rows.length }) : t("member.new_invite.continue")}
+          {pending ? null : <Icon name="chev" />}
         </button>
       </form>
     </div>

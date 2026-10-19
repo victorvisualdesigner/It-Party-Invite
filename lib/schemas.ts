@@ -1,10 +1,10 @@
 // Validation for every Phase 1 admin form. Field errors use the strings in content/copy.json.
 import { z } from "zod";
 import { t } from "@/lib/copy";
-import { fromLagos } from "@/lib/event";
+import { eventDates, fromLagos, lagosDate, MAX_EVENT_DAYS } from "@/lib/event";
 import { nairaToKobo } from "@/lib/money";
 import { normalizePhone } from "@/lib/phone";
-import { REVEAL_MODES, type EventRow, type RevealMode } from "@/lib/types";
+import { REVEAL_MODES, type EventDay, type EventRow, type RevealMode } from "@/lib/types";
 import type { FieldErrors } from "@/lib/action";
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; errors: FieldErrors };
@@ -17,6 +17,8 @@ export const eventInputSchema = z.object({
   name: text(200),
   date: text(10),
   time: text(5),
+  end_date: text(10),
+  days: z.array(z.object({ date: text(10), name: text(200), dress_code: text(200) })).max(MAX_EVENT_DAYS),
   venue_name: text(200),
   venue_address: text(300),
   dress_code: text(200),
@@ -42,6 +44,9 @@ function wholeNumber(value: string, min: number, max: number): number | null {
   return n >= min && n <= max ? n : null;
 }
 
+/** Longest hold for an unpaid invite: a year, in hours. */
+export const MAX_HOLD_HOURS = 8760;
+
 /** datetime-local value (YYYY-MM-DDTHH:MM) in Lagos time to UTC ISO. */
 function fromLagosLocal(value: string): string | null {
   return value.length >= 16 ? fromLagos(value.slice(0, 10), value.slice(11, 16)) : null;
@@ -62,6 +67,26 @@ export function parseEventInput(raw: unknown): Parsed<EventPatch> {
     if (!startsAt) errors.date = t("admin.event.errors.date");
   }
 
+  // Several days: the last day comes after the first, at most MAX_EVENT_DAYS days in all.
+  let endDate: string | null = null;
+  let days: EventDay[] = [];
+  if (input.end_date) {
+    const first = startsAt ? lagosDate(startsAt) : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.end_date) || !first) errors.end_date = t("admin.event.errors.end_date");
+    else if (input.end_date <= first) errors.end_date = t("admin.event.errors.end_date");
+    else if (eventDates(startsAt, input.end_date).slice(-1)[0] !== input.end_date) errors.end_date = t("admin.event.errors.too_many_days", { n: MAX_EVENT_DAYS });
+    else {
+      endDate = input.end_date;
+      const dates = new Set(eventDates(startsAt, endDate));
+      days = input.days
+        .map((d) => ({ date: d.date, name: d.name.trim().replace(/\s+/g, " "), dress_code: d.dress_code.trim() }))
+        .filter((d) => dates.has(d.date) && (d.name || d.dress_code));
+      days.forEach((d) => {
+        if (d.name.length > 80) errors[`days.${d.date}.name`] = t("admin.event.errors.name");
+      });
+    }
+  }
+
   const price = nairaToKobo(input.price || "0");
   if (price == null) errors.price = t("admin.event.errors.whole_number");
 
@@ -72,8 +97,8 @@ export function parseEventInput(raw: unknown): Parsed<EventPatch> {
     else capacity = c === 0 ? null : c;
   }
 
-  const hold = wholeNumber(input.hold_window_hours, 1, 720);
-  if (hold == null) errors.hold_window_hours = t("admin.event.errors.whole_number");
+  const hold = wholeNumber(input.hold_window_hours, 1, MAX_HOLD_HOURS);
+  if (hold == null) errors.hold_window_hours = t("admin.event.errors.hold", { max: MAX_HOLD_HOURS });
   const unopened = wholeNumber(input.unopened_expiry_days, 1, 90);
   if (unopened == null) errors.unopened_expiry_days = t("admin.event.errors.whole_number");
 
@@ -92,6 +117,8 @@ export function parseEventInput(raw: unknown): Parsed<EventPatch> {
     value: {
       name,
       starts_at: startsAt,
+      end_date: endDate,
+      days,
       venue_name: input.venue_name.trim(),
       venue_address: input.venue_address.trim(),
       dress_code: input.dress_code.trim(),
@@ -170,13 +197,13 @@ export function parseSlotLimit(value: unknown): { ok: true; value: number | null
 export const MAX_GUESTS_PER_BATCH = 20;
 
 export const guestRowsSchema = z
-  .array(z.object({ first_name: text(200), phone: text(40) }))
+  .array(z.object({ first_name: text(200), phone: text(40), pay: z.boolean().optional() }))
   .min(1)
   .max(MAX_GUESTS_PER_BATCH);
 export type GuestRowsInput = z.infer<typeof guestRowsSchema>;
 
 /** Field errors are keyed rows.{i}.first_name and rows.{i}.phone. */
-export function parseGuestRows(raw: unknown): Parsed<{ first_name: string; phone_e164: string }[]> {
+export function parseGuestRows(raw: unknown): Parsed<{ first_name: string; phone_e164: string; pay: boolean }[]> {
   const shape = guestRowsSchema.safeParse(raw);
   if (!shape.success) return { ok: false, errors: { form: t("member.new_invite.name_error") } };
   const errors: FieldErrors = {};
@@ -185,8 +212,36 @@ export function parseGuestRows(raw: unknown): Parsed<{ first_name: string; phone
     if (!firstName || firstName.length > 40) errors[`rows.${i}.first_name`] = t("member.new_invite.name_error");
     const phone = normalizePhone(row.phone);
     if (!phone) errors[`rows.${i}.phone`] = t("member.new_invite.phone_error");
-    return { first_name: firstName, phone_e164: phone ?? "" };
+    return { first_name: firstName, phone_e164: phone ?? "", pay: row.pay === true };
   });
   if (Object.keys(errors).length) return { ok: false, errors };
   return { ok: true, value: rows };
+}
+
+/* ---------- Admins ---------- */
+
+export const adminInputSchema = z.object({ first_name: text(200), email: text(320), phone: text(40) });
+export type AdminInput = z.infer<typeof adminInputSchema>;
+
+export function parseAdminInput(raw: unknown): Parsed<{ first_name: string; email: string; phone_e164: string }> {
+  const shape = adminInputSchema.safeParse(raw);
+  if (!shape.success) return { ok: false, errors: { form: t("admin.common.error_network") } };
+  const errors: FieldErrors = {};
+  const firstName = shape.data.first_name.trim().replace(/\s+/g, " ");
+  if (!firstName || firstName.length > 40) errors.first_name = t("member.new_invite.name_error");
+  const email = z.email().safeParse(shape.data.email.trim());
+  if (!email.success) errors.email = t("admin.admins.errors.email");
+  const phone = normalizePhone(shape.data.phone);
+  if (!phone) errors.phone = t("member.new_invite.phone_error");
+  if (Object.keys(errors).length) return { ok: false, errors };
+  return { ok: true, value: { first_name: firstName, email: (email.data as string).toLowerCase(), phone_e164: phone as string } };
+}
+
+/** A new password: at least 12 characters, typed the same twice. */
+export function parseNewPassword(password: unknown, again: unknown): { ok: true; value: string } | { ok: false; errors: FieldErrors } {
+  const p = typeof password === "string" ? password : "";
+  const a = typeof again === "string" ? again : "";
+  if (p.length < 12 || p.length > 200) return { ok: false, errors: { password: t("admin.setup.errors.short") } };
+  if (p !== a) return { ok: false, errors: { again: t("admin.setup.errors.match") } };
+  return { ok: true, value: p };
 }

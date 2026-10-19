@@ -10,12 +10,13 @@ import type { FieldErrors } from "@/lib/action";
 import { callAction } from "@/lib/client-action";
 import { t, tList } from "@/lib/copy";
 import type { KeyDelivery } from "@/lib/people";
+import { isHost, type Role } from "@/lib/types";
 import { formatPhoneTyping } from "@/lib/phone-typing";
 import { addMemberAction, removeMemberAction, resetKeyAction, setSlotsAction } from "./actions";
 
 export type MemberRow = {
   id: string;
-  role: "admin" | "member";
+  role: Role;
   firstName: string;
   phone: string;
   slotLimit: number | null;
@@ -252,7 +253,7 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
           </thead>
           <tbody>
             {rows.map((row) => {
-              const unlimited = row.role === "admin" || row.slotLimit == null;
+              const unlimited = isHost(row.role) || row.slotLimit == null;
               const total = row.slotLimit ?? 0;
               return (
                 <tr key={row.id} data-member={row.firstName}>
@@ -261,7 +262,7 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
                       <MiniSeal letter={row.firstName.charAt(0).toUpperCase()} />
                       <div>
                         <b>{row.firstName}</b>
-                        {row.role === "admin" ? <span className="role">{t("admin.members.host")}</span> : null}
+                        {isHost(row.role) ? <span className="role">{t("admin.members.host")}</span> : null}
                       </div>
                     </div>
                   </td>
@@ -269,7 +270,7 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
                   <td>
                     <div className="slot-cell">
                       <div className="slot-edit">
-                        {row.role === "admin" ? <span className="quiet">{t("admin.members.slots_unlimited")}</span> : <SlotSelect row={row} />}
+                        {isHost(row.role) ? <span className="quiet">{t("admin.members.slots_unlimited")}</span> : <SlotSelect row={row} />}
                       </div>
                       {unlimited ? null : (
                         <div className="meter">
@@ -300,7 +301,7 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
                       >
                         <Icon name="key" />
                       </button>
-                      {row.role !== "admin" ? (
+                      {!isHost(row.role) ? (
                         <button
                           className="icon-btn"
                           type="button"

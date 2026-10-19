@@ -65,6 +65,21 @@ a { color: inherit; }
 .btn-sm { min-height: 36px; padding: 0 var(--space-4); font-size: var(--text-sm); }
 .btn-wide { width: 100%; }
 .btn .ico { width: 18px; height: 18px; flex: none; }
+/* Working: any button marked aria-busy shows a small spinner in front of its words and stays put.
+   The icon steps aside so the width does not jump. The No button never gets this: it can't be pressed. */
+.btn[aria-busy="true"], .btn-yes[aria-busy="true"] { cursor: progress; }
+.btn[aria-busy="true"][disabled] { opacity: 0.9; }
+.btn[aria-busy="true"] .ico { display: none; }
+.btn[aria-busy="true"]::before, .btn-yes[aria-busy="true"]::before, .is-busy::before {
+  content: ""; flex: none; width: 1em; height: 1em; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; opacity: 0.85;
+  animation: btn-spin 0.7s linear infinite;
+}
+.btn-yes[aria-busy="true"] { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+.icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; border: 0; background: transparent; color: var(--fg-quiet); text-decoration: none; cursor: pointer; }
+.icon-btn:hover { background: rgba(127, 127, 127, 0.12); color: var(--fg); }
+.icon-btn .ico { width: 18px; height: 18px; }
 .linkish { background: none; border: 0; padding: 0; color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
 
 /* Fields */
@@ -168,7 +183,7 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 .env-letter { left: 7%; right: 7%; top: 7%; height: 82%; border-radius: 3px; z-index: 1; padding: 14px 16px; background: var(--cream-50); background-image: var(--noise, none); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); display: flex; flex-direction: column; gap: 8px; }
-.env-letter .to { font-family: var(--font-script); font-size: 22px; line-height: 1.1; color: var(--ink-600); min-height: 1.3em; }
+.env-letter .to { font-family: var(--font-script); font-weight: 700; font-size: 28px; line-height: 1; color: var(--ink-600); min-height: 1.3em; }
 .env-letter .rule { height: 1px; width: 60%; background: linear-gradient(90deg, rgba(143, 114, 48, 0.55), transparent); }
 .env-letter .rule.short { width: 38%; }
 .env-front { inset: 0; z-index: 2; border-radius: 7px; overflow: hidden; }
@@ -177,7 +192,7 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
 .env-front .side-r { background: linear-gradient(260deg, var(--paper-fold-1) 0%, var(--paper-fold-3) 100%); clip-path: polygon(100% 0, 48% 54%, 100% 100%); }
 .env-front .bottom { background: linear-gradient(0deg, var(--paper-fold-4) 0%, var(--paper-fold-5) 100%); clip-path: polygon(0 100%, 50% 46%, 100% 100%); }
 .env-front .grain { background-image: var(--noise, none); opacity: 0.9; }
-.env-mark { position: absolute; z-index: 3; right: 9%; bottom: 8%; font-family: var(--font-script); font-size: 17px; letter-spacing: 0.04em; color: var(--gold-700); opacity: 0.85; }
+.env-mark { position: absolute; z-index: 3; right: 9%; bottom: 8%; font-family: var(--font-script); font-weight: 700; font-size: 22px; letter-spacing: 0.02em; color: var(--gold-700); opacity: 0.85; }
 .env-flap { top: 0; left: 0; right: 0; height: 57%; z-index: 4; transform-origin: 50% 0; transform-style: preserve-3d; }
 .env-flap i { position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 50% 100%); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .env-flap .out { background: linear-gradient(180deg, var(--paper-flap-1) 0%, var(--paper-flap-2) 100%); }
@@ -202,7 +217,7 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
 /* Mini seal used as avatars and marks */
 .seal-mini { position: relative; width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
 .seal-mini svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.seal-mini b { position: relative; font-family: var(--font-script); font-weight: 400; font-size: 21px; line-height: 1; color: rgba(232, 209, 147, 0.95); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
+.seal-mini b { position: relative; font-family: var(--font-script); font-weight: 700; font-size: 26px; line-height: 1; color: rgba(232, 209, 147, 0.95); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
 .seal-mini.quiet svg { filter: saturate(0.2) brightness(0.9); opacity: 0.6; }
 
 /* The Only Yes logo (components/brand/Logo.tsx). Every size comes from the mark's height, --logo-s. */
@@ -222,6 +237,7 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
 @media (prefers-reduced-motion: reduce) {
   .env-glow, .chip-awaiting_confirmation::before { animation: none; }
   .btn, .switch input, .switch input::after { transition: none; }
+  .btn[aria-busy="true"]::before, .btn-yes[aria-busy="true"]::before, .is-busy::before { animation-duration: 1.6s; }
 }
 
 /* Quiet page for unknown paths */

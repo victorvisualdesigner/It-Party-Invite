@@ -136,7 +136,8 @@ async function main() {
   if (byPhone && byPhone.id !== byAuth?.id) {
     throw new Error(`${localPhone(phone)} already belongs to someone else on the team. Use a different number.`);
   }
-  const row = { role: "admin", first_name: firstName, phone_e164: phone, auth_user_id: user.id, slot_limit: null, active: true };
+  // The seeded admin is the superadmin: the one who adds and removes other admins.
+  const row = { role: "superadmin", first_name: firstName, phone_e164: phone, auth_user_id: user.id, slot_limit: null, active: true };
   const { error: peopleError } = byAuth
     ? await supabase.from("people").update(row).eq("id", byAuth.id)
     : await supabase.from("people").insert(row);

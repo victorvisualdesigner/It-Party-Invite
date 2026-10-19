@@ -2,12 +2,13 @@
 // number (or a screen with no details) leaves the server.
 import "server-only";
 import { audit } from "@/lib/audit";
+import { t } from "@/lib/copy";
 import { db } from "@/lib/db";
-import { formatEventDate, isRevealed, revealHint } from "@/lib/event";
-import { refreshExpiry } from "@/lib/invites";
+import { daysDiffer, eventDays, formatEventWhen, isRevealed, revealHint } from "@/lib/event";
+import { pausedClock, refreshExpiry } from "@/lib/invites";
 import { verifyKey } from "@/lib/keys";
 import { formatNaira } from "@/lib/money";
-import { liveGuestPayment, openGuestPayment, paidByCover, paymentView, type PaymentView } from "@/lib/payments";
+import { liveGuestPayment, liveMemberPayment, openGuestPayment, paidByCover, paymentView, type PaymentView } from "@/lib/payments";
 import { maskPhone, normalizePhone } from "@/lib/phone";
 import { getEvent } from "@/lib/settings";
 import { addInviteDevice } from "@/lib/session";
@@ -19,10 +20,17 @@ const HOUR = 3600e3;
 export const LOCKOUT_ATTEMPTS = 5;
 const LOCKOUT_MS = 30 * MINUTE;
 
+/** One day of a multi-day event, as the guest may see it. The date stays null until it is revealed. */
+export type GuestDay = { date: string | null; label: string; name: string; dress: string };
+
 export type EventView = {
   name: string;
   date: string | null;
   starts_at: string | null;
+  /** Every day when the event runs over several days, otherwise empty. */
+  days: GuestDay[];
+  /** True when some day has its own name or dress code, so the card lists the days. */
+  days_differ: boolean;
   venue: string | null;
   venue_address: string | null;
   venue_hint: string;
@@ -46,7 +54,6 @@ export type GuestView =
       status: Invite["status"];
       covered: boolean;
       taps: number;
-      board: boolean;
       hold_ends: string | null;
       payment: PaymentView | null;
       by_member: boolean;
@@ -57,10 +64,18 @@ export type GuestView =
 export function eventView(e: EventRow, paid: boolean): EventView {
   const dateShown = isRevealed(e.reveal_date_mode, e.reveal_date_at, paid) && !!e.starts_at;
   const venueShown = isRevealed(e.reveal_venue_mode, e.reveal_venue_at, paid);
+  const days = eventDays(e);
   return {
     name: e.name,
-    date: dateShown ? formatEventDate(e.starts_at as string) : null,
+    date: dateShown ? formatEventWhen(e.starts_at as string, e.end_date) : null,
     starts_at: dateShown ? e.starts_at : null,
+    days: days.map((d) => ({
+      date: dateShown ? d.date : null,
+      label: dateShown ? d.label : t("guest.card.day_n", { n: d.number }),
+      name: d.name,
+      dress: d.dress,
+    })),
+    days_differ: daysDiffer(days, e),
     venue: venueShown ? e.venue_name : null,
     venue_address: venueShown ? e.venue_address : null,
     venue_hint: revealHint(e.reveal_venue_mode, e.reveal_venue_at, e.starts_at),
@@ -97,7 +112,6 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
     status: inv.status,
     covered: inv.covered,
     taps: inv.no_taps,
-    board: inv.board_visible,
     hold_ends: inv.expires_at,
     payment: null as PaymentView | null,
     by_member: false,
@@ -109,6 +123,9 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
 
   const p = await liveGuestPayment(inv.id);
   if (p) base.payment = await paymentView(p);
+  // Their inviter sent a transfer for them and the host is checking it: no account details, just wait.
+  const mp = await liveMemberPayment(inv.id);
+  if (mp?.status === "claimed" && inv.yes_at && p?.status !== "claimed") return { screen: "wait", ...base, by_member: true };
   if (inv.status === "awaiting_confirmation") return { screen: "wait", ...base };
   if (inv.status === "said_yes" && p?.status === "not_found") return { screen: "notfound", ...base };
   return { screen: "card", ...base };
@@ -185,6 +202,17 @@ export async function sayYes(inv: Invite): Promise<YesResult> {
     await audit("guest", null, "said_yes", {}, inv.id);
     return paid ? (inv.covered ? { kind: "covered" } : { kind: "paid" }) : { kind: "refresh" };
   }
+  // The inviter already sent money for them: hold the seat while the host checks, and show no account.
+  const mp = await liveMemberPayment(inv.id);
+  if (mp?.status === "claimed") {
+    await db()
+      .from("invites")
+      .update({ status: "awaiting_confirmation", ...pausedClock(inv) })
+      .eq("id", inv.id)
+      .in("status", ["opened", "said_yes"]);
+    await audit("guest", null, "said_yes", { by_member: true }, inv.id);
+    return { kind: "refresh" };
+  }
   const p: Payment | null = await openGuestPayment(inv);
   if (!p) return { kind: "no_account" };
   if (inv.status === "opened") {
@@ -197,8 +225,4 @@ export async function sayYes(inv: Invite): Promise<YesResult> {
 export async function addNoTaps(inviteId: string, delta: number): Promise<number | null> {
   const { data } = await db().rpc("add_no_taps", { p_invite_id: inviteId, p_delta: Math.trunc(delta) });
   return (data as number | null) ?? null;
-}
-
-export async function setBoardVisible(inviteId: string, on: boolean): Promise<void> {
-  await db().from("invites").update({ board_visible: on }).eq("id", inviteId);
 }

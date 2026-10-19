@@ -8,7 +8,7 @@ import { createDrafts, sendDraft, shuffleDraft, type Inviter } from "@/lib/invit
 import { parseGuestRows } from "@/lib/schemas";
 
 const UNLIMITED = { left: null, total: null, unlimited: true };
-const asInviter = (a: Admin): Inviter => ({ id: a.id, role: "admin", first_name: a.first_name, slot_limit: null });
+const asInviter = (a: Admin): Inviter => ({ id: a.id, role: a.role, first_name: a.first_name, slot_limit: null });
 
 export async function createAdminInvites(input: CreateInput): Promise<CreateResult> {
   const admin = await getAdmin();

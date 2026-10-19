@@ -9,6 +9,8 @@ const base: EventInput = {
   venue_name: "The Glasshouse",
   venue_address: "14 Bourdillon Road, Ikoyi, Lagos",
   dress_code: "Black tie, with a touch of gold",
+  end_date: "",
+  days: [],
   price: "50000",
   refund_text: "",
   capacity: "120",
@@ -59,10 +61,37 @@ describe("event settings", () => {
       date: t("admin.event.errors.date"),
       price: t("admin.event.errors.whole_number"),
       capacity: t("admin.event.errors.whole_number"),
-      hold_window_hours: t("admin.event.errors.whole_number"),
+      hold_window_hours: t("admin.event.errors.hold", { max: 8760 }),
       unopened_expiry_days: t("admin.event.errors.whole_number"),
       reveal_venue_at: t("admin.event.errors.reveal_at"),
     });
+  });
+
+  it("takes a long hold window like 730 hours, up to a year", () => {
+    const r = parseEventInput({ ...base, hold_window_hours: "730" });
+    expect(r.ok && r.value.hold_window_hours).toBe(730);
+    expect(parseEventInput({ ...base, hold_window_hours: "8761" }).ok).toBe(false);
+  });
+
+  it("keeps a last day and each day's own name and dress code", () => {
+    const r = parseEventInput({
+      ...base,
+      end_date: "2026-12-22",
+      days: [
+        { date: "2026-12-20", name: " Day  two ", dress_code: "All white" },
+        { date: "2026-12-21", name: "", dress_code: "" },
+        { date: "2027-01-05", name: "Outside the range", dress_code: "" },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.end_date).toBe("2026-12-22");
+    expect(r.value.days).toEqual([{ date: "2026-12-20", name: "Day two", dress_code: "All white" }]);
+  });
+
+  it("refuses a last day on or before the first", () => {
+    const r = parseEventInput({ ...base, end_date: "2026-12-19" });
+    expect(!r.ok && r.errors.end_date).toBe(t("admin.event.errors.end_date"));
   });
 
   it("refuses unknown reveal modes", () => {

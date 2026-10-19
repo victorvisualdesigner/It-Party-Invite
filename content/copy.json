@@ -53,7 +53,11 @@
       "revealed_soon_short": "soon",
       "reveal_after_payment": "once you're in",
       "reveal_hours_before": "{n} hours before",
-      "reveal_on_date": "on {date}"
+      "reveal_on_date": "on {date}",
+      "date_range": "{from} to {to}, from {time}",
+      "days_label": "Day by day",
+      "day_n": "Day {n}",
+      "day_dress": "Dress code: {dress}"
     },
     "transfer": {
       "title": "Lock your seat",
@@ -74,11 +78,6 @@
       "confirm_sent": "Done, I've sent it",
       "not_now": "I'll pay later",
       "not_now_note": "Your seat stays held until {expires_at}. Come back through the same link.",
-      "steps": [
-        "Transfer from your bank app",
-        "Add the reference",
-        "Tell us it's sent"
-      ],
       "held_chip": "Held {time_left}",
       "sender_name_placeholder": "As it appears on your bank app",
       "sender_name_error": "Add the name on the account you sent from.",
@@ -116,14 +115,11 @@
       "qr_caption": "Show this at the door",
       "save_image": "Save card",
       "add_calendar": "Add to calendar",
-      "board_toggle": "Show me on the Resistance Board",
       "no_count": "You fought the No button {n} times.",
       "qr_note": "One scan, one entry. Keep it on your phone.",
       "code_label": "Ticket",
       "no_count_zero": "You didn't even hesitate.",
       "no_count_one": "You fought the No button once.",
-      "board_on": "You'll appear on the Resistance Board.",
-      "board_off": "You're hidden from the Resistance Board.",
       "saved": "Your card is saved. Show it at the door if your network drops.",
       "calendar_locked": "The date is still sealed. It goes in your calendar once it's revealed.",
       "save_title": "Your card",
@@ -190,7 +186,9 @@
       "greeting_afternoon": "Afternoon, {member}.",
       "paid_count": "{n} paid",
       "waiting_count": "{n} on their way",
-      "not_you": "Not you?"
+      "not_you": "Not you?",
+      "guests_title": "Your guests",
+      "guests_empty": "Your guests show here once you send their invites."
     },
     "new_invite": {
       "title": "Who's coming?",
@@ -206,7 +204,7 @@
       "send_sms": "Send by SMS instead",
       "copy_message": "Copy message",
       "sent_note": "Sent. You'll see when they open it.",
-      "continue": "Write their invite",
+      "continue": "Preview their invite",
       "back": "Back",
       "name_error": "Add their first name.",
       "phone_error": "That number doesn't look right. Try it with the first 0, like 0803 123 4567.",
@@ -215,19 +213,28 @@
       "key_help": "It rides at the bottom of the message. You won't see it again after sending.",
       "pay_help": "Adds a line telling them it's covered. You'll get the transfer details right after.",
       "copied": "Message copied. Paste it into their chat.",
-      "another": "Invite someone else",
+      "another": "Invite more people",
       "done": "Back to your guests",
       "slots_short": "You have {left} invites left. Remove someone to continue.",
       "capacity_full": "The venue is full. No more invites can go out.",
-      "continue_many": "Write their invites",
-      "add_row": "Add someone else",
+      "continue_many": "Preview {n} invites",
+      "add_row": "Add another guest",
       "remove_row": "Remove",
       "guest_label": "Guest {n}",
       "inviting_as": "Inviting as {member}.",
       "ready_title": "Your invites are ready",
       "ready_help": "Send each one from your own WhatsApp. Every message carries its own link and key.",
       "all_sent": "All sent. Each envelope opens only for the number you entered.",
-      "writing": "Writing their invites"
+      "writing": "Getting them ready",
+      "start_over": "Start over",
+      "step_who": "Who's coming",
+      "step_send": "Send",
+      "step_label": "Step {n} of 2",
+      "sent_progress": "{sent} of {total} sent",
+      "send_again": "Open WhatsApp again",
+      "comp_toggle": "Free for them",
+      "comp_help": "You're covering it. They get in without paying.",
+      "pay_button": "Pay for {guest}"
     },
     "status": {
       "sent": "Sent",
@@ -264,6 +271,14 @@
       "cancel_done": "Invite cancelled. The slot is yours again.",
       "reveal_done": "Opening WhatsApp with the news.",
       "paying_note": "You're paying for {guest}. Waiting for the hosts to confirm."
+    },
+    "pay_sheet": {
+      "title": "Pay for {guest}",
+      "intro": "Transfer the exact amount from any bank app. {guest} gets in the moment the host confirms it.",
+      "sent": "Payment sent. The host will confirm it.",
+      "claimed_chip": "Payment sent",
+      "confirmed_chip": "Paid",
+      "later": "I'll pay later"
     }
   },
   "admin": {
@@ -277,7 +292,17 @@
       "event": "Event settings",
       "account": "Payout account",
       "door": "Door",
-      "board": "Resistance Board"
+      "board": "Resistance Board",
+      "admins": "Admins",
+      "more": "More",
+      "close": "Close",
+      "all_pages": "All pages",
+      "short": {
+        "overview": "Overview",
+        "guests": "Guests",
+        "payments": "Payments",
+        "invite": "Invite"
+      }
     },
     "common": {
       "_about": "Shared by every admin screen.",
@@ -433,8 +458,20 @@
         "name": "Add the event name.",
         "reveal_at": "Pick when to reveal it.",
         "whole_number": "Use a whole number.",
-        "date": "Add both the date and the start time."
-      }
+        "date": "Add both the date and the start time.",
+        "end_date": "Pick a last day after the first day.",
+        "too_many_days": "An event can run for {n} days at most.",
+        "hold": "Use a whole number of hours from 1 to {max}."
+      },
+      "multi_day": "Runs over several days",
+      "multi_day_help": "For events like 12 to 16 April.",
+      "first_day_label": "First day",
+      "end_date_label": "Last day",
+      "dress_label_main": "Dress code, main",
+      "days_title": "Day by day",
+      "days_help": "Give any day its own name or dress code. Leave a box empty to use the main one.",
+      "day_name_label": "Name for {day}",
+      "day_dress_label": "Dress code for {day}"
     },
     "account": {
       "title": "Payout account",
@@ -453,9 +490,17 @@
       "errors": {
         "bank": "Add the bank name.",
         "number": "Account numbers have 10 digits.",
-        "name": "Add the name guests will see."
+        "name": "Add the name guests will see.",
+        "gone": "That account is already gone."
       },
-      "added": "Account saved."
+      "added": "Account saved.",
+      "delete": "Remove",
+      "delete_title": "Remove {bank} {number}?",
+      "delete_body": "Guests won't see this account any more.",
+      "delete_body_active": "Guests pay into this account right now. Your newest other account takes over. With no other account, guests can't pay until you add one.",
+      "deleted": "Account removed.",
+      "archived": "Account removed. It stays in your records because payments used it.",
+      "now_active": "{bank} is now the active account."
     },
     "door": {
       "title": "Door",
@@ -530,6 +575,52 @@
       "event_updated": "Event settings saved",
       "account_switched": "Payout account switched",
       "empty": "Nothing yet. The first envelope will show up here."
+    },
+    "admins": {
+      "title": "Admins",
+      "subtitle": "People who sign in here and run the event with you.",
+      "add": "Add an admin",
+      "name_label": "First name",
+      "email_label": "Email",
+      "email_help": "They sign in with this email.",
+      "phone_label": "Phone number",
+      "phone_help": "Their setup link goes to this number on WhatsApp.",
+      "save": "Add admin",
+      "owner": "Super admin",
+      "you": "You",
+      "pending": "Hasn't set a password yet",
+      "remove": "Remove",
+      "remove_title": "Remove {admin}?",
+      "remove_body": "They can't sign in any more. Guests they invited keep their invites.",
+      "removed": "{admin} can't sign in any more.",
+      "link_title": "Send {admin} their setup link",
+      "link_note": "The link works once, for 3 days. {admin} uses it to pick their own password.",
+      "send_link": "Send on WhatsApp",
+      "copy_link": "Copy link",
+      "copied": "Link copied.",
+      "new_link": "New password link",
+      "link_message": "Hi {admin}, you're now a host for {event}. Set your password here: {link}",
+      "empty": "Just you for now. Add someone to share the work.",
+      "only_owner": "Only the super admin can add or remove admins.",
+      "errors": {
+        "email": "That email doesn't look right.",
+        "taken": "That email or number already belongs to someone on the team."
+      }
+    },
+    "setup": {
+      "title": "Set your password",
+      "body": "Welcome, {admin}. Pick a password you'll remember. You sign in with {email}.",
+      "password_label": "New password",
+      "again_label": "Password again",
+      "help": "At least 12 characters.",
+      "submit": "Save and sign in",
+      "submitting": "Saving",
+      "expired_title": "This link has expired",
+      "expired_body": "Ask the person who added you for a new one.",
+      "errors": {
+        "short": "Use at least 12 characters.",
+        "match": "The two passwords don't match."
+      }
     }
   }
 }

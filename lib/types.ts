@@ -18,10 +18,16 @@ export type InviteStatus = (typeof INVITE_STATUSES)[number];
 /** Statuses that hold a slot and count towards capacity. */
 export const SLOT_STATUSES: InviteStatus[] = ["sent", "opened", "said_yes", "awaiting_confirmation", "paid"];
 
+/** One day of a multi-day event. Empty name or dress code falls back to the event's own. */
+export type EventDay = { date: string; name: string; dress_code: string };
+
 export type EventRow = {
   id: number;
   name: string;
   starts_at: string | null;
+  /** Last day (Lagos calendar date, YYYY-MM-DD) when the event runs over several days. */
+  end_date: string | null;
+  days: EventDay[];
   venue_name: string;
   venue_address: string;
   dress_code: string;
@@ -38,9 +44,16 @@ export type EventRow = {
   reference_prefix: string;
 };
 
+export type Role = "superadmin" | "admin" | "member";
+
+/** Hosts (the superadmin and admins) invite without limits and sign in to the portal. */
+export function isHost(role: Role): boolean {
+  return role !== "member";
+}
+
 export type Person = {
   id: string;
-  role: "admin" | "member";
+  role: Role;
   first_name: string;
   phone_e164: string;
   auth_user_id: string | null;
@@ -48,6 +61,9 @@ export type Person = {
   key_hash: string | null;
   active: boolean;
   created_at: string;
+  email?: string | null;
+  setup_hash?: string | null;
+  setup_expires_at?: string | null;
 };
 
 export type PayoutAccount = {
@@ -57,6 +73,7 @@ export type PayoutAccount = {
   account_name: string;
   active: boolean;
   created_at: string;
+  archived_at?: string | null;
 };
 
 export type ActorType = "admin" | "member" | "guest" | "system";

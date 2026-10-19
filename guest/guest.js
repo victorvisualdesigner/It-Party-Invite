@@ -53,6 +53,12 @@
     if (!reduced) anim(el, [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: E.out });
     clearTimeout(toastT); toastT = setTimeout(function () { el.remove(); }, 3200);
   }
+  // Every button that talks to the server shows it is working. The No button never does: it can't be pressed.
+  function working(btn, on) {
+    if (!btn) return;
+    btn.disabled = !!on;
+    if (on) btn.setAttribute("aria-busy", "true"); else btn.removeAttribute("aria-busy");
+  }
   function copyText(text, btn) {
     var done = function () {
       if (!btn) return;
@@ -123,7 +129,7 @@
     return go(SCREEN[s.screen]).then(function () {
       if (s.screen === "lock" && opts.arrive) arrive();
       if (s.screen === "card" && opts.reveal) revealCard();
-      if (s.screen === "ticket") flipTicket(!!opts.flip);
+      if (s.screen === "ticket") { fitName(); flipTicket(!!opts.flip); }
     });
   }
 
@@ -133,7 +139,12 @@
     var ev = s.event, rows = [];
     rows.push([t("guest.card.date_label"), ev.date ? esc(ev.date) : esc(t("guest.card.date_hidden")), ev.date ? "" : "muted"]);
     rows.push([t("guest.card.venue_label"), ev.venue ? esc(ev.venue) + (ev.venue_address ? "<small>" + esc(ev.venue_address) + "</small>" : "") : esc(t("guest.card.venue_hidden", { venue_reveal_hint: ev.venue_hint })), ev.venue ? "" : "muted"]);
-    if (ev.dress) rows.push([t("guest.card.dress_label"), esc(ev.dress), ""]);
+    if (ev.days && ev.days.length && ev.days_differ) {
+      rows.push([t("guest.card.days_label"), '<ul class="days">' + ev.days.map(function (d) {
+        return "<li><b>" + esc(d.label) + "</b>" + (d.name !== ev.name ? "<span>" + esc(d.name) + "</span>" : "") +
+          (d.dress ? "<small>" + esc(t("guest.card.day_dress", { dress: d.dress })) + "</small>" : "") + "</li>";
+      }).join("") + "</ul>", ""]);
+    } else if (ev.dress) rows.push([t("guest.card.dress_label"), esc(ev.dress), ""]);
     if (!forTicket) rows.push([t("guest.card.price_label"), s.covered ? esc(t("guest.card.covered_value", { inviter: s.inviter })) : esc(ev.price), s.covered ? "muted" : "price"]);
     return rows.map(function (r) { return "<dt>" + esc(r[0]) + '</dt><dd class="' + r[2] + '">' + r[1] + "</dd>"; }).join("");
   }
@@ -180,7 +191,6 @@
       $("#t-code").textContent = s.ticket_code || "";
       var n = s.taps || 0;
       $("#nocount").textContent = n === 0 ? t("guest.ticket.no_count_zero") : n === 1 ? t("guest.ticket.no_count_one") : t("guest.ticket.no_count", { n: n });
-      $("#board").checked = !!s.board;
       $("#add-cal").setAttribute("aria-disabled", s.event.starts_at ? "false" : "true");
     },
     expired: function (s) { ended(t("guest.expired.title"), t("guest.expired.body", { inviter: s.inviter || t("guest.lock.inviter_hint_fallback") })); },
@@ -219,6 +229,14 @@
     if (k) { e.preventDefault(); keyEl.value = k; }
   });
   keyEl.addEventListener("blur", function () { if (keyEl.value) keyEl.value = prettyKey(keyEl.value); });
+  // Typing VELVET4827 shows VELVET 4827: the space appears as soon as the first digit does.
+  function typingKey(v) {
+    var raw = String(v).toUpperCase(), n = raw.replace(/[^A-Z0-9]/g, ""), m = n.match(/^([A-Z]*)([0-9]*)/);
+    var word = m[1].slice(0, 12), digits = m[2].slice(0, 4);
+    if (digits) return word + (word ? " " : "") + digits;
+    return word + (word && /\s$/.test(raw) ? " " : "");
+  }
+  keyEl.addEventListener("input", function () { if (keyEl.selectionStart === keyEl.value.length) keyEl.value = typingKey(keyEl.value); });
 
   var unlocking = false;
   $("#lock-form").addEventListener("submit", function (e) {
@@ -231,9 +249,9 @@
       if (!reduced) anim($("#lock-form"), [{ transform: "translateX(0)" }, { transform: "translateX(-8px)" }, { transform: "translateX(7px)" }, { transform: "translateX(-4px)" }, { transform: "none" }], { duration: 320 });
     };
     if (navigator.onLine === false) { showErr(t("guest.lock.error_network")); return; }
-    unlocking = true; btn.disabled = true; btn.textContent = t("guest.lock.submitting");
+    unlocking = true; working(btn, true); btn.textContent = t("guest.lock.submitting");
     api("unlock", { phone: phoneEl.value, key: keyEl.value }).then(function (r) {
-      unlocking = false; btn.disabled = false; btn.textContent = t("guest.lock.submit");
+      unlocking = false; working(btn, false); btn.textContent = t("guest.lock.submit");
       if (r.result === "ok") { unlockSeq(r.state); return; }
       if (r.result === "stranger") { route({ screen: "stranger" }); return; }
       if (r.result === "claimed") { route({ screen: "claimed" }); return; }
@@ -242,7 +260,7 @@
       if (r.attemptsLeft != null && r.attemptsLeft <= 3) msg += " " + t("guest.lock.error_attempts_left", { n: r.attemptsLeft });
       showErr(msg);
     }).catch(function () {
-      unlocking = false; btn.disabled = false; btn.textContent = t("guest.lock.submit");
+      unlocking = false; working(btn, false); btn.textContent = t("guest.lock.submit");
       showErr(t("guest.lock.error_network"));
     });
   });
@@ -628,13 +646,13 @@
     var name = $("#sender").value.trim();
     if (name.length < 2) { $("#sender-error").hidden = false; $("#sender").setAttribute("aria-invalid", "true"); $("#sender").focus(); return; }
     $("#sender").removeAttribute("aria-invalid");
-    claiming = true; $("#btn-sent").disabled = true;
+    claiming = true; working($("#btn-sent"), true);
     var r;
     try { r = await api("claim", { sender_name: name }); } catch (e) {
-      claiming = false; $("#btn-sent").disabled = false;
+      claiming = false; working($("#btn-sent"), false);
       $("#sheet-error").textContent = t("guest.network"); $("#sheet-error").hidden = false; return;
     }
-    claiming = false; $("#btn-sent").disabled = false;
+    claiming = false; working($("#btn-sent"), false);
     await closeSheet();
     route(r.state);
   });
@@ -650,12 +668,12 @@
 
   /* ---------- Not found and covered ---------- */
   $("#nf-retry").addEventListener("click", async function () {
-    var b = this; if (b.disabled) return; b.disabled = true;
+    var b = this; if (b.disabled) return; working(b, true);
     try {
       var r = await api("claim", { sender_name: (state.payment && state.payment.sender_name) || "" });
       route(r.state);
     } catch (e) { toast(t("guest.network")); }
-    b.disabled = false;
+    working(b, false);
   });
   $("#nf-details").addEventListener("click", function () {
     var s = Object.assign({}, state, { screen: "card" });
@@ -678,12 +696,27 @@
   }
 
   /* ---------- The premium card ---------- */
-  var ticket = $("#ticket");
+  var ticket = $("#ticket"), fitCtx = null;
+  // Long names (Oluwaseyifunmi, Chukwuemeka) shrink to one line instead of breaking mid-word.
+  function fitName() {
+    var el = $("#t-name"); if (!el) return;
+    el.style.fontSize = "";
+    var max = parseFloat(getComputedStyle(el).fontSize) || 88, avail = el.clientWidth * 0.94;
+    if (!avail || !el.textContent) return;
+    fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
+    fitCtx.font = "700 " + max + "px Tangerine";
+    var w = fitCtx.measureText(el.textContent).width;
+    if (w > avail) el.style.fontSize = Math.max(40, Math.floor(max * avail / w)) + "px";
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (current === "s-ticket") fitName(); });
+  window.addEventListener("resize", function () { if (current === "s-ticket") fitName(); });
   function flipTicket(animate) {
     var scene = $("#ticket-scene");
-    if (reduced || !animate) { ticket.style.transform = "rotateY(180deg)"; scene.classList.add("landed"); foilLoop(); return; }
-    scene.classList.remove("landed");
+    var back = ticket.querySelector(".t-back");
+    if (reduced || !animate) { ticket.style.transform = "rotateY(180deg)"; back.classList.add("gone"); scene.classList.add("landed"); foilLoop(); return; }
+    scene.classList.remove("landed"); back.classList.remove("gone");
     ticket.style.transform = "rotateY(0deg)";
+    setTimeout(function () { back.classList.add("gone"); }, 380 + 500);
     setTimeout(function () {
       var a = anim(ticket, [{ transform: "rotateY(0deg)" }, { transform: "rotateY(180deg)" }], { duration: 1000, easing: E.inout, fill: "forwards" });
       a.finished.then(function () {
@@ -707,21 +740,26 @@
   $("#add-cal").addEventListener("click", function () {
     var s = state;
     if (!s.event.starts_at) { toast(t("guest.ticket.calendar_locked")); return; }
-    var start = Date.parse(s.event.starts_at);
+    var start = Date.parse(s.event.starts_at), ev = s.event;
     var z = function (ts) { return new Date(ts).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); };
     var icsText = function (v) { return String(v).replace(/\\/g, "\\\\").replace(/[,;]/g, function (c) { return "\\" + c; }).replace(/\n/g, "\\n"); };
-    var lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//" + icsText(s.event.name) + "//Invite//EN", "BEGIN:VEVENT", "UID:" + (s.ticket_code || "card") + "@invite",
-      "DTSTAMP:" + z(Date.now()), "DTSTART:" + z(start), "DTEND:" + z(start + 5 * 3600e3), "SUMMARY:" + icsText(s.event.name),
-      s.event.venue ? "LOCATION:" + icsText(s.event.venue + (s.event.venue_address ? ", " + s.event.venue_address : "")) : null,
-      "DESCRIPTION:" + icsText(t("guest.ticket.invited_by", { inviter: s.inviter }) + (s.event.dress ? ". " + t("guest.card.dress_label") + ": " + s.event.dress : "")),
-      "END:VEVENT", "END:VCALENDAR"].filter(Boolean);
+    // One calendar entry per day, each at the same start time, with that day's name and dress code.
+    var days = ev.days && ev.days.length ? ev.days : [{ name: ev.name, dress: ev.dress }];
+    var lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//" + icsText(ev.name) + "//Invite//EN"];
+    days.forEach(function (d, i) {
+      var at = start + i * 24 * 3600e3;
+      lines.push("BEGIN:VEVENT", "UID:" + (s.ticket_code || "card") + "-" + (i + 1) + "@invite", "DTSTAMP:" + z(Date.now()), "DTSTART:" + z(at), "DTEND:" + z(at + 5 * 3600e3),
+        "SUMMARY:" + icsText(d.name || ev.name));
+      if (ev.venue) lines.push("LOCATION:" + icsText(ev.venue + (ev.venue_address ? ", " + ev.venue_address : "")));
+      lines.push("DESCRIPTION:" + icsText(t("guest.ticket.invited_by", { inviter: s.inviter }) + (d.dress ? ". " + t("guest.card.dress_label") + ": " + d.dress : "")), "END:VEVENT");
+    });
+    lines.push("END:VCALENDAR");
     download(slug(s.event.name) + ".ics", new Blob([lines.join("\r\n")], { type: "text/calendar" }));
   });
-  $("#board").addEventListener("change", function (e) {
-    var on = e.target.checked;
-    api("board", { on: on }).then(function () { toast(on ? t("guest.ticket.board_on") : t("guest.ticket.board_off")); }).catch(function () { e.target.checked = !on; toast(t("guest.network")); });
+  $("#save-card").addEventListener("click", function () {
+    var b = $("#save-card"); if (b.disabled) return; working(b, true);
+    saveCard().catch(function () { toast(t("guest.network")); }).then(function () { working(b, false); });
   });
-  $("#save-card").addEventListener("click", function () { saveCard().catch(function () { toast(t("guest.network")); }); });
 
   function loadSvg(svg) {
     return new Promise(function (res, rej) {
@@ -731,8 +769,38 @@
   }
   async function saveCard() {
     var s = state; if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    var W = 1080, Hh = 1680, STUB = 440, c = document.createElement("canvas"); c.width = W; c.height = Hh;
-    var x = c.getContext("2d"), css = getComputedStyle(document.documentElement), v = function (n) { return css.getPropertyValue(n).trim(); };
+    var W = 1080, STUB = 440, VX = 330, VW = W - 90 - VX;
+    var css = getComputedStyle(document.documentElement), v = function (n) { return css.getPropertyValue(n).trim(); };
+    var UI = "'Urbanist', 'Plus Jakarta Sans'";
+    // Measure first, so the card is exactly as tall as what is on it.
+    var m = document.createElement("canvas").getContext("2d");
+    var wrap = function (text, font, width) {
+      m.font = font; var words = String(text || "").split(/\s+/), lines = [], line = "";
+      words.forEach(function (w) { var next = line ? line + " " + w : w; if (line && m.measureText(next).width > width) { lines.push(line); line = w; } else line = next; });
+      if (line) lines.push(line);
+      return lines;
+    };
+    var ev = s.event, VALUE = "400 40px " + UI, SMALL = "400 30px " + UI, BOLD = "600 36px " + UI, rows = [];
+    var add = function (label, parts) { rows.push({ label: label, parts: parts }); };
+    add(t("guest.card.date_label"), [{ font: VALUE, color: "--mist-100", lines: wrap(ev.date || t("guest.card.date_hidden"), VALUE, VW) }]);
+    var where = [{ font: VALUE, color: "--mist-100", lines: wrap(ev.venue || t("guest.card.venue_hidden", { venue_reveal_hint: ev.venue_hint }), VALUE, VW) }];
+    if (ev.venue && ev.venue_address) where.push({ font: SMALL, color: "--mist-400", lines: wrap(ev.venue_address, SMALL, VW) });
+    add(t("guest.card.venue_label"), where);
+    if (ev.days && ev.days.length && ev.days_differ) {
+      var dayParts = [];
+      ev.days.forEach(function (d, i) {
+        dayParts.push({ font: BOLD, color: "--mist-100", lines: wrap(d.label + (d.name !== ev.name ? ", " + d.name : ""), BOLD, VW), gap: i ? 22 : 0 });
+        if (d.dress) dayParts.push({ font: SMALL, color: "--mist-400", lines: wrap(t("guest.card.day_dress", { dress: d.dress }), SMALL, VW) });
+      });
+      add(t("guest.card.days_label"), dayParts);
+    } else if (ev.dress) add(t("guest.card.dress_label"), [{ font: VALUE, color: "--mist-100", lines: wrap(ev.dress, VALUE, VW) }]);
+    var lineH = function (font) { return parseInt(font.split(" ")[1], 10) * 1.3; };
+    var rowsTop = 606, y = rowsTop;
+    rows.forEach(function (r) { r.y = y; r.parts.forEach(function (p) { y += (p.gap || 0) + p.lines.length * lineH(p.font); }); y += 46; });
+    var Hh = Math.max(1160, Math.round(y + 30 + STUB));
+
+    var c = document.createElement("canvas"); c.width = W; c.height = Hh;
+    var x = c.getContext("2d");
     var rr = function (X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); };
     var g = x.createRadialGradient(W / 2, -200, 50, W / 2, 0, Hh * 1.1);
     g.addColorStop(0, v("--green-650")); g.addColorStop(0.55, v("--green-900")); g.addColorStop(1, v("--green-950"));
@@ -743,21 +811,25 @@
     x.strokeStyle = "rgba(200,162,74,.6)"; x.lineWidth = 3; rr(2, 2, W - 4, Hh - 4, 58); x.stroke();
     x.strokeStyle = "rgba(200,162,74,.28)"; x.lineWidth = 2; rr(28, 28, W - 56, Hh - STUB - 56, 36); x.stroke();
     var track = function (px) { if ("letterSpacing" in x) x.letterSpacing = px; };
-    x.fillStyle = v("--gold-400"); x.font = "600 30px 'Urbanist', 'Plus Jakarta Sans'"; track("5px");
-    x.textAlign = "left"; x.fillText(s.event.name.toUpperCase(), 90, 132);
+    x.textBaseline = "alphabetic";
+    x.fillStyle = v("--gold-400"); x.font = "600 30px " + UI; track("5px");
+    x.textAlign = "left"; x.fillText(ev.name.toUpperCase(), 90, 132);
     x.textAlign = "right"; x.fillText(t("guest.ticket.admits").toUpperCase(), W - 90, 132); x.textAlign = "left"; track("0px");
-    var size = 220; x.font = size + "px 'Pinyon Script'"; while (x.measureText(s.guest).width > W - 200 && size > 80) { size -= 8; x.font = size + "px 'Pinyon Script'"; }
+    var size = 260; x.font = "700 " + size + "px 'Tangerine'"; while (x.measureText(s.guest).width > W - 200 && size > 96) { size -= 8; x.font = "700 " + size + "px 'Tangerine'"; }
     var fg = x.createLinearGradient(90, 0, 90 + x.measureText(s.guest).width, 0);
     fg.addColorStop(0, v("--foil-dark")); fg.addColorStop(0.36, v("--foil-light")); fg.addColorStop(0.54, v("--gold-500")); fg.addColorStop(0.74, v("--gold-300")); fg.addColorStop(1, v("--foil-dark"));
-    x.fillStyle = fg; x.fillText(s.guest, 90, 370);
-    x.fillStyle = v("--gold-300"); x.font = "68px 'Pinyon Script'"; x.fillText(t("guest.ticket.invited_by", { inviter: s.inviter }), 90, 440);
-    x.fillStyle = "rgba(200,162,74,.3)"; x.fillRect(90, 510, W - 180, 2);
-    var ev = s.event, rows = [[t("guest.card.date_label"), ev.date || t("guest.card.date_hidden")], [t("guest.card.venue_label"), ev.venue || t("guest.card.venue_hidden", { venue_reveal_hint: ev.venue_hint })], [t("guest.card.dress_label"), ev.dress]];
-    rows.forEach(function (r, i) {
-      if (!r[1]) return;
-      var y = 590 + i * 110;
-      x.fillStyle = v("--mist-400"); x.font = "600 26px 'Urbanist', 'Plus Jakarta Sans'"; track("4px"); x.fillText(r[0].toUpperCase(), 90, y); track("0px");
-      x.fillStyle = v("--mist-100"); x.font = "400 40px 'Urbanist', 'Plus Jakarta Sans'"; x.fillText(r[1], 330, y + 4);
+    x.fillStyle = fg; x.fillText(s.guest, 90, 340);
+    x.fillStyle = v("--gold-300"); x.font = "700 84px 'Tangerine'"; x.fillText(t("guest.ticket.invited_by", { inviter: s.inviter }), 90, 462);
+    x.fillStyle = "rgba(200,162,74,.3)"; x.fillRect(90, 516, W - 180, 2);
+    rows.forEach(function (r) {
+      x.fillStyle = v("--mist-400"); x.font = "600 26px " + UI; track("4px"); x.fillText(r.label.toUpperCase(), 90, r.y); track("0px");
+      var yy = r.y + 4;
+      r.parts.forEach(function (p) {
+        yy += p.gap || 0;
+        x.fillStyle = v(p.color); x.font = p.font;
+        p.lines.forEach(function (l, i) { x.fillText(l, VX, yy + i * lineH(p.font)); });
+        yy += p.lines.length * lineH(p.font);
+      });
     });
     x.setLineDash([14, 12]); x.strokeStyle = "rgba(200,162,74,.4)"; x.lineWidth = 3;
     x.beginPath(); x.moveTo(60, Hh - STUB); x.lineTo(W - 60, Hh - STUB); x.stroke(); x.setLineDash([]);
@@ -765,10 +837,11 @@
     rr(qx, qy, qs, qs, 26); x.fillStyle = v("--cream-50"); x.fill();
     if (s.qr) { try { var img = await loadSvg(s.qr); x.drawImage(img, qx + 20, qy + 20, qs - 40, qs - 40); } catch (e) {} }
     var note = t("guest.ticket.qr_note").split(". ");
-    x.fillStyle = v("--mist-100"); x.font = "600 40px 'Urbanist', 'Plus Jakarta Sans'"; x.fillText(t("guest.ticket.qr_caption"), 450, qy + 80);
-    x.fillStyle = v("--mist-400"); x.font = "400 30px 'Urbanist', 'Plus Jakarta Sans'"; x.fillText(note[0] + (note[1] ? "." : ""), 450, qy + 134); x.fillText(note[1] || "", 450, qy + 176);
+    x.fillStyle = v("--mist-100"); x.font = "600 40px " + UI; x.fillText(t("guest.ticket.qr_caption"), 450, qy + 80);
+    x.fillStyle = v("--mist-400"); x.font = "400 30px " + UI; x.fillText(note[0] + (note[1] ? "." : ""), 450, qy + 134); x.fillText(note[1] || "", 450, qy + 176);
     x.fillStyle = v("--gold-400"); x.font = "600 30px ui-monospace, Menlo, monospace"; track("4px"); x.fillText(s.ticket_code || "", 450, qy + 250);
-    c.toBlob(function (b) { showSaved(b, slug(s.event.name) + "-card-" + slug(s.guest) + ".png"); }, "image/png");
+    var blob = await new Promise(function (res) { c.toBlob(res, "image/png"); });
+    showSaved(blob, slug(ev.name) + "-card-" + slug(s.guest) + ".png");
   }
   // In-app browsers often drop downloads, so the card opens as an image the guest can press and hold.
   function showSaved(blob, name) {

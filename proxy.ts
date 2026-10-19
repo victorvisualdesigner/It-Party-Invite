@@ -31,7 +31,8 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims?.sub;
-  const onLogin = request.nextUrl.pathname === "/admin/login";
+  // The login screen and a new admin's one time setup link work without a session.
+  const onLogin = request.nextUrl.pathname === "/admin/login" || request.nextUrl.pathname.startsWith("/admin/setup/");
 
   // Server actions answer a signed out caller themselves ({ signedOut: true }), so the form can react.
   const isAction = request.headers.has("next-action");

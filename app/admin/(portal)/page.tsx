@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/auth";
 import { t, tList } from "@/lib/copy";
 import { getEvent } from "@/lib/settings";
 import { timeAgo } from "@/lib/time";
+import { isHost } from "@/lib/types";
 
 export const metadata: Metadata = { title: t("admin.overview.title") };
 export const dynamic = "force-dynamic";
@@ -113,11 +114,11 @@ export default async function OverviewPage() {
                     <MiniSeal letter={p.first_name.charAt(0).toUpperCase()} />
                     <span>
                       <b>{p.first_name}</b>
-                      {p.role === "admin" ? <small>{t("admin.members.host")}</small> : null}
+                      {isHost(p.role) ? <small>{t("admin.members.host")}</small> : null}
                     </span>
                   </span>
                   <span className="quiet num" style={{ fontSize: 13 }}>
-                    {p.role === "admin" || p.slot_limit == null
+                    {isHost(p.role) || p.slot_limit == null
                       ? t("admin.members.slots_used_unlimited", { used: p.used })
                       : t("admin.members.slots_used", { used: p.used, total: p.slot_limit })}
                   </span>

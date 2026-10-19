@@ -4,7 +4,7 @@ import { LogoMark } from "@/components/brand/Logo";
 import { boardRows } from "@/lib/admin-data";
 import { getAdmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
-import { formatEventDate } from "@/lib/event";
+import { formatEventWhen } from "@/lib/event";
 import { getEvent } from "@/lib/settings";
 import { BoardRefresh } from "./BoardRefresh";
 import "./board.css";
@@ -64,8 +64,7 @@ export default async function BoardPage() {
           <div className="empty-b">{t("admin.activity.empty")}</div>
         )}
         <footer className="b-foot">
-          <span>{event.starts_at ? formatEventDate(event.starts_at) : ""}</span>
-          <span>{t("guest.ticket.board_toggle")}</span>
+          <span>{event.starts_at ? formatEventWhen(event.starts_at, event.end_date) : ""}</span>
         </footer>
       </div>
     </main>

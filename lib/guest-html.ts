@@ -1,7 +1,7 @@
 // Server HTML for the guest page. Plain HTML, no framework runtime: it paints on a budget phone
 // over 3G before any script runs. Markup mirrors ui/guest.html.
 import "server-only";
-import { t, tList } from "@/lib/copy";
+import { t } from "@/lib/copy";
 import type { GuestView } from "@/lib/guest";
 import { BRAND_SPARK, BRAND_Y } from "@/lib/brand";
 import { SEAL_D } from "@/lib/seal";
@@ -101,10 +101,6 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
     endedBody = t("guest.expired.body", { inviter: state.inviter ?? t("guest.lock.inviter_hint_fallback") });
   }
 
-  const steps = tList("guest.transfer.steps")
-    .map((s, i) => `<li><b>${i + 1}</b><span>${esc(s)}</span></li>`)
-    .join("");
-
   // State goes to the script as inert JSON. Escaping "<" keeps it from ever closing the script tag.
   const json = JSON.stringify(state).replace(/</g, "\\u003c");
   const ogImage = `${appUrl.replace(/\/+$/, "")}/og-envelope.png`;
@@ -130,7 +126,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 <link rel="apple-touch-icon" href="/apple-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Unbounded:wght@400..700&family=Urbanist:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&family=Unbounded:wght@400..700&family=Urbanist:wght@400..700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&text=%E2%82%A6&display=swap">
 <link rel="stylesheet" href="${esc(assets.css)}">
 <script src="${esc(assets.js)}" defer></script>
@@ -246,7 +242,6 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
     <button class="btn btn-ghost" type="button" id="save-card">${icon("image")}<span>${esc(t("guest.ticket.save_image"))}</span></button>
     <button class="btn btn-ghost" type="button" id="add-cal">${icon("calendar")}<span>${esc(t("guest.ticket.add_calendar"))}</span></button>
   </div>
-  <label class="switch panel-switch" for="board"><span>${esc(t("guest.ticket.board_toggle"))}</span><input type="checkbox" id="board"></label>
 </section>
 
 <section class="screen" id="s-ended"${hidden("s-ended")} aria-labelledby="ended-title">
@@ -267,7 +262,6 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
       <span class="held" id="held"></span>
     </div>
     <p class="intro">${esc(t("guest.transfer.intro"))}</p>
-    <ol class="steps" id="steps">${steps}</ol>
     <div class="rows" id="rows"></div>
     <p class="note" id="hold-line"></p>
     <p class="refund" id="refund"></p>

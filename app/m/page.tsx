@@ -1,12 +1,14 @@
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { InviteComposer } from "@/components/invite/InviteComposer";
+import { MemberGuests, type GuestLine } from "@/components/invite/MemberGuests";
 import { t } from "@/lib/copy";
 import { appUrl } from "@/lib/env";
 import { capacityInfo, sendBlocker, slotInfo } from "@/lib/invites";
+import { memberGuests } from "@/lib/member-guests";
 import { currentMember } from "@/lib/members";
 import { MAX_GUESTS_PER_BATCH } from "@/lib/schemas";
 import { getEvent } from "@/lib/settings";
-import { createMemberInvites, sendMemberDraft, shuffleMemberDraft, signOutMember } from "./actions";
+import { claimMemberPayAction, createMemberInvites, openMemberPayAction, sendMemberDraft, shuffleMemberDraft, signOutMember } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,26 @@ export default async function MemberPage() {
   const nearlyFull = member ? (await capacityInfo(event)).nearlyFull : false;
   const linkHost = new URL(appUrl()).host;
   const total = slots && !slots.unlimited ? (slots.total as number) : 0;
+  const STATUS: Record<string, string> = {
+    sent: t("member.status.sent"),
+    opened: t("member.status.opened"),
+    said_yes: t("member.status.said_yes"),
+    awaiting_confirmation: t("member.status.awaiting"),
+    paid: t("member.status.paid"),
+    expired: t("member.status.expired"),
+  };
+  const guests: GuestLine[] = member
+    ? (await memberGuests(member.id)).map((g) => ({
+        id: g.id,
+        guest: g.guest,
+        status: g.status,
+        statusLabel: g.covered && g.status !== "paid" ? t("member.status.covered") : STATUS[g.status] ?? g.status,
+        covered: g.covered,
+        taps: g.taps,
+        paymentLabel: g.payment === "claimed" ? t("member.pay_sheet.claimed_chip") : g.payment === "confirmed" ? t("member.pay_sheet.confirmed_chip") : null,
+        canPay: g.canPay,
+      }))
+    : [];
 
   return (
     <main className="shell">
@@ -72,11 +94,15 @@ export default async function MemberPage() {
         nearlyFull={nearlyFull}
         linkHost={linkHost}
         maxRows={MAX_GUESTS_PER_BATCH}
+        payMode="member"
+        openPayAction={openMemberPayAction}
+        claimPayAction={claimMemberPayAction}
         createAction={createMemberInvites}
         shuffleAction={shuffleMemberDraft}
         sendAction={sendMemberDraft}
         signOutAction={signOutMember}
       />
+      {member ? <MemberGuests rows={guests} openPayAction={openMemberPayAction} claimPayAction={claimMemberPayAction} /> : null}
     </main>
   );
 }

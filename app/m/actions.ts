@@ -3,11 +3,15 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import type { ComposerSlots, CreateInput, CreateResult, SendResult, ShuffleResult } from "@/components/invite/InviteComposer";
+import type { ClaimPayResult, OpenPayResult } from "@/components/invite/PaySheet";
 import { t } from "@/lib/copy";
-import { createDrafts, sendDraft, shuffleDraft, slotInfo, type Inviter } from "@/lib/invites";
+import { createDrafts, getInvite, sendDraft, shuffleDraft, slotInfo, type Inviter } from "@/lib/invites";
+import { claimMemberPayment, openMemberPayment, paymentView } from "@/lib/payments";
+import { getEvent } from "@/lib/settings";
 import { currentMember, forgetMember, identifyMember, type Member } from "@/lib/members";
 import { clientIp, underLimit } from "@/lib/ratelimit";
 import { parseGuestRows } from "@/lib/schemas";
+import { isHost } from "@/lib/types";
 
 function slotsOf(s: Awaited<ReturnType<typeof slotInfo>>): ComposerSlots {
   return { left: s.unlimited ? null : s.left, total: s.total, unlimited: s.unlimited };
@@ -47,7 +51,7 @@ export async function shuffleMemberDraft(id: string): Promise<ShuffleResult> {
 export async function sendMemberDraft(id: string): Promise<SendResult> {
   const member = await currentMember();
   if (!member) return { ok: false, message: t("member.login.error") };
-  const result = await sendDraft(String(id), member, member.role === "admin" ? "admin" : "member");
+  const result = await sendDraft(String(id), member, isHost(member.role) ? "admin" : "member");
   revalidatePath("/m");
   return result.ok ? { ok: true } : { ok: false, message: result.message };
 }
@@ -55,4 +59,42 @@ export async function sendMemberDraft(id: string): Promise<SendResult> {
 export async function signOutMember(): Promise<void> {
   await forgetMember();
   revalidatePath("/m");
+}
+
+/** Transfer details for paying for one of this member's guests. */
+export async function openMemberPayAction(inviteId: string): Promise<OpenPayResult> {
+  const member = await currentMember();
+  if (!member) return { ok: false, message: t("member.login.error") };
+  const inv = await getInvite(String(inviteId));
+  if (!inv || inv.inviter_id !== member.id) return { ok: false };
+  const p = await openMemberPayment(inv, member.id);
+  if (!p) return { ok: false, message: t("guest.transfer.no_account") };
+  const view = await paymentView(p);
+  const event = await getEvent();
+  return {
+    ok: true,
+    data: {
+      paymentId: p.id,
+      status: p.status,
+      amount: view.amount,
+      amountDigits: view.amount_digits,
+      bank: view.bank,
+      accountNumber: view.account_number,
+      accountNumberDisplay: view.account_number_display,
+      accountName: view.account_name,
+      reference: view.reference,
+      refund: event.refund_text,
+      senderName: p.sender_name,
+    },
+  };
+}
+
+export async function claimMemberPayAction(paymentId: string, senderName: string): Promise<ClaimPayResult> {
+  const member = await currentMember();
+  if (!member) return { ok: false, message: t("member.login.error") };
+  const name = String(senderName ?? "").trim().replace(/\s+/g, " ");
+  if (name.length < 2 || name.length > 80) return { ok: false, message: t("guest.transfer.sender_name_error") };
+  const p = await claimMemberPayment(String(paymentId), member.id, name);
+  revalidatePath("/m");
+  return p ? { ok: true } : { ok: false };
 }

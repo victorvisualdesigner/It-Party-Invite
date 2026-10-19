@@ -3,7 +3,7 @@
   Mood: an old private members' club. Bottle green, antique gold, warm cream paper, one wax red seal.
   Fonts, all on Google Fonts:
     Unbounded (display): headings, numbers that matter, the voice of the event.
-    Pinyon Script (script): names, salutations and flourishes of three words or fewer. Never a full sentence:
+    Tangerine (script, bold for names): names, salutations and flourishes of three words or fewer. Never a full sentence:
       a sentence in script is slow to read, so lines like the chase lines use Urbanist.
     Urbanist (UI): everything you read or tap. Covers Yoruba and Igbo diacritics.
     Plus Jakarta Sans: only the naira sign, which Urbanist lacks. Loaded as a tiny single glyph file.
@@ -104,7 +104,7 @@
   /* Type. The app loads the fonts with next/font, which sets the --font-*-face variables;
      the guest page links the same families from Google Fonts. */
   --font-display: var(--font-unbounded-face, "Unbounded"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-script: var(--font-pinyon-face, "Pinyon Script"), "Snell Roundhand", "Apple Chancery", cursive;
+  --font-script: var(--font-tangerine-face, "Tangerine"), "Snell Roundhand", "Apple Chancery", cursive;
   --font-ui: var(--font-urbanist-face, "Urbanist"), var(--font-naira-face, "Plus Jakarta Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --text-xs: 12px;

@@ -17,7 +17,63 @@
 .guest-rows .row-head b { font-size: 13px; font-weight: var(--weight-ui-strong); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-quiet); }
 .guest-rows .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 420px) { .guest-rows .pair { grid-template-columns: 1fr; } }
-.add-row { justify-self: start; }
+/* Add another guest: a full width dashed tile, so it reads as "another card like the one above". */
+.add-row { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; border: 1.5px dashed var(--line); border-radius: var(--radius-md); background: transparent; color: var(--accent-strong); font: inherit; font-size: 15px; font-weight: var(--weight-ui-strong); cursor: pointer; }
+.add-row:hover { border-color: var(--accent); }
+.add-row .ico { width: 18px; height: 18px; }
+.form > .help { margin: -6px 0 0; }
+.me-fields { display: grid; gap: 14px; }
+.guest-rows .row-head .icon-btn { width: 36px; height: 36px; margin: -6px -6px -6px 0; }
+.pay-switch { padding-top: 10px; border-top: 1px solid var(--line); text-align: left; }
+.pay-switch b { display: block; font-size: 15px; font-weight: var(--weight-ui-strong); }
+.pay-switch small { display: block; margin-top: 2px; font-size: 13px; color: var(--fg-quiet); line-height: 1.4; }
+
+/* Two steps, always visible: where you are and what comes next. */
+.steps-bar { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 13px; font-weight: var(--weight-ui-strong); color: var(--fg-quiet); }
+.steps-bar li { flex: 1; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
+.steps-bar li span { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; box-shadow: inset 0 0 0 1.5px currentColor; }
+.steps-bar li span .ico { width: 13px; height: 13px; }
+.steps-bar li.on { color: var(--accent-strong); border-bottom-color: var(--accent); }
+.steps-bar li.on span { background: var(--accent); color: var(--ink-900); box-shadow: none; }
+.steps-bar li.done { color: var(--fg); border-bottom-color: var(--accent); }
+
+/* Step 2 */
+.progress { display: grid; gap: 6px; font-size: 14px; font-weight: var(--weight-ui-strong); color: var(--fg-quiet); }
+.progress i { display: block; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.progress b { display: block; height: 100%; background: var(--accent); transform-origin: 0 50%; transition: transform var(--dur-base) var(--ease-out); }
+.send-stack { display: grid; gap: 10px; }
+.send-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.send-alt .btn { width: 100%; padding: 0 10px; }
+.draft.is-sent .wa { opacity: 0.75; }
+.pay-note { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; min-height: 44px; border-radius: var(--radius-pill); background: rgba(200, 162, 74, 0.12); color: var(--accent-strong); font-weight: var(--weight-ui-strong); font-size: 15px; }
+.pay-note .ico { width: 18px; height: 18px; }
+.start-over { justify-self: center; }
+.sent .btn { margin-top: 6px; }
+
+/* Paying for a guest */
+.pay-rows { display: grid; margin: 14px 0 10px; border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--line); }
+.pay-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.pay-row:first-child { border-top: 0; }
+.pay-row .k { display: block; font-size: 12px; font-weight: var(--weight-ui-strong); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-quiet); }
+.pay-row .v { display: block; font-size: 16px; font-weight: var(--weight-ui-strong); color: var(--fg); overflow-wrap: anywhere; }
+.pay-row .btn { flex: none; }
+.pay-refund { font-size: 13px; }
+.pay-loading { display: flex; align-items: center; gap: 10px; margin-top: 12px !important; }
+.pay-done { display: grid; justify-items: center; gap: 10px; padding-top: 10px; text-align: center; }
+.pay-done > .ico { width: 34px; height: 34px; color: var(--accent); }
+.pay-done .actions { justify-content: center; }
+
+/* The member's guests */
+.my-guests h2 { margin: 0 0 12px; font-family: var(--font-display); font-weight: var(--weight-display); font-size: 18px; letter-spacing: var(--tracking-display); }
+.my-guests ul { display: grid; margin: 0; padding: 0; list-style: none; border-radius: var(--radius-md); background: var(--raised); box-shadow: inset 0 0 0 1px var(--line); }
+.my-guests li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.my-guests li:first-child { border-top: 0; }
+.g-main { display: grid; gap: 6px; min-width: 0; }
+.g-main b { font-size: 16px; }
+.g-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.g-meta small { font-size: 12px; color: var(--fg-quiet); }
+.g-paid { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: var(--weight-ui-strong); color: var(--accent-strong); }
+.g-paid .ico { width: 16px; height: 16px; }
 .who-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--raised); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; color: var(--fg-quiet); }
 .who-bar b { color: var(--fg); font-weight: var(--weight-ui-strong); }
 
@@ -25,7 +81,7 @@
 .drafts { display: grid; gap: 22px; margin: 0; padding: 0; list-style: none; }
 .draft { display: grid; gap: 12px; }
 .draft-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.draft-head b { font-family: var(--font-script); font-weight: 400; font-size: 32px; line-height: 1.1; }
+.draft-head b { font-family: var(--font-script); font-weight: 700; font-size: 42px; line-height: 1; }
 .draft-head small { display: block; font-size: 13px; color: var(--fg-quiet); font-variant-numeric: tabular-nums; }
 
 /* WhatsApp preview */
@@ -59,7 +115,7 @@
 /* Done */
 .sent { display: grid; justify-items: center; gap: 14px; text-align: center; padding-top: 12px; }
 .sent .seal-mini { width: 84px; height: 84px; }
-.sent .seal-mini b { font-size: 30px; }
+.sent .seal-mini b { font-size: 40px; }
 .sent h2 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: 21px; letter-spacing: var(--tracking-display); }
 .sent p { margin: 0; color: var(--fg-quiet); max-width: 32ch; }
 

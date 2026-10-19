@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
+import { ConfirmDialog } from "@/components/admin/Dialogs";
+import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
 import type { FieldErrors } from "@/lib/action";
 import { callAction } from "@/lib/client-action";
 import { t } from "@/lib/copy";
-import { addAccountAction, setActiveAccountAction } from "./actions";
+import { addAccountAction, deleteAccountAction, setActiveAccountAction } from "./actions";
 
 export function MakeActiveButton({ accountId }: { accountId: string }) {
   const toast = useToast();
@@ -25,6 +27,36 @@ export function MakeActiveButton({ accountId }: { accountId: string }) {
     >
       {pending ? t("admin.common.saving") : t("admin.account.set_active")}
     </button>
+  );
+}
+
+export function DeleteAccountButton({ accountId, bank, number, active }: { accountId: string; bank: string; number: string; active: boolean }) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  async function remove() {
+    const result = await callAction(() => deleteAccountAction(accountId));
+    setOpen(false);
+    if (!result.ok) return toast(("message" in result && result.message) || t("admin.common.error_network"));
+    const done = result.data.archived ? t("admin.account.archived") : t("admin.account.deleted");
+    toast(result.data.nowActive ? `${done} ${t("admin.account.now_active", { bank: result.data.nowActive })}` : done);
+  }
+  return (
+    <>
+      <button className="btn btn-quiet btn-sm bank-remove" type="button" onClick={() => setOpen(true)} aria-label={`${t("admin.account.delete")} ${bank} ${number}`}>
+        <Icon name="x" />
+        <span>{t("admin.account.delete")}</span>
+      </button>
+      {open ? (
+        <ConfirmDialog
+          title={t("admin.account.delete_title", { bank, number })}
+          body={active ? t("admin.account.delete_body_active") : t("admin.account.delete_body")}
+          okLabel={t("admin.account.delete")}
+          danger
+          onOk={remove}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </>
   );
 }
 
