@@ -1,27 +1,34 @@
 // What the guest page may know, screen by screen. Before a correct number and key, only the masked
 // number (or a screen with no details) leaves the server.
 import "server-only";
+import { ASK_STATUSES, canAskInviter, inviterPayPath, isAskingInviter } from "@/lib/ask-inviter";
 import { audit } from "@/lib/audit";
 import { t } from "@/lib/copy";
 import { db } from "@/lib/db";
+import { appUrl } from "@/lib/env";
 import { daysDiffer, eventDays, formatEventWhen, isRevealed, revealHint } from "@/lib/event";
 import { pausedClock, refreshExpiry } from "@/lib/invites";
 import { verifyKey } from "@/lib/keys";
+import { askInviterMessage } from "@/lib/messages";
 import { formatNaira } from "@/lib/money";
 import { liveGuestPayment, liveMemberPayment, openGuestPayment, paidByCover, paymentView, type PaymentView } from "@/lib/payments";
 import { maskPhone, normalizePhone } from "@/lib/phone";
 import { getEvent } from "@/lib/settings";
 import { addInviteDevice } from "@/lib/session";
 import { ticketQrSvg } from "@/lib/tickets";
-import type { CardDesign, EventRow, Invite, Payment } from "@/lib/types";
+import type { CardDesign, EventRow, Invite, Payment, Role } from "@/lib/types";
+import { waLink } from "@/lib/whatsapp";
 
 const MINUTE = 60e3;
 const HOUR = 3600e3;
 export const LOCKOUT_ATTEMPTS = 5;
 const LOCKOUT_MS = 30 * MINUTE;
 
-/** One day of a multi-day event, as the guest may see it. The date stays null until it is revealed. */
-export type GuestDay = { date: string | null; label: string; name: string; dress: string };
+/**
+ * One day of a multi-day event, as the guest may see it. The card shows the day's number in a
+ * circle beside its name; the date stays null until it is revealed and is only used for the calendar.
+ */
+export type GuestDay = { date: string | null; number: number; label: string; name: string; dress: string };
 
 export type EventView = {
   name: string;
@@ -49,7 +56,7 @@ export type GuestView =
   | { screen: "cancelled" }
   | { screen: "expired"; inviter: string | null }
   | ({
-      screen: "card" | "wait" | "notfound" | "covered" | "ticket" | "closed";
+      screen: "card" | "held" | "wait" | "asked" | "notfound" | "covered" | "ticket" | "closed";
       guest: string;
       inviter: string;
       event: EventView;
@@ -59,6 +66,8 @@ export type GuestView =
       hold_ends: string | null;
       payment: PaymentView | null;
       by_member: boolean;
+      /** On the asked screen only: opens WhatsApp to the inviter with a line from the library. */
+      ask_href: string | null;
       ticket_code: string | null;
       qr: string | null;
     });
@@ -73,6 +82,7 @@ export function eventView(e: EventRow, paid: boolean): EventView {
     starts_at: dateShown ? e.starts_at : null,
     days: days.map((d) => ({
       date: dateShown ? d.date : null,
+      number: d.number,
       label: dateShown ? d.label : t("guest.card.day_n", { n: d.number }),
       name: d.name,
       dress: d.dress,
@@ -88,9 +98,22 @@ export function eventView(e: EventRow, paid: boolean): EventView {
   };
 }
 
+type InviterRow = { first_name: string; phone_e164: string; role: Role };
+
+async function inviterOf(inv: Invite): Promise<InviterRow | null> {
+  const { data } = await db().from("people").select("first_name, phone_e164, role").eq("id", inv.inviter_id).maybeSingle();
+  return (data as InviterRow | null) ?? null;
+}
+
 async function inviterName(inv: Invite): Promise<string> {
-  const { data } = await db().from("people").select("first_name").eq("id", inv.inviter_id).single();
-  return (data?.first_name as string) ?? "";
+  return (await inviterOf(inv))?.first_name ?? "";
+}
+
+/** The WhatsApp line the guest sends to ask their inviter to pay. Same line on every poll. */
+function askHref(inv: Invite, inviter: InviterRow | null): string | null {
+  if (!inviter?.phone_e164) return null;
+  const text = askInviterMessage(inviter.first_name, inv.guest_first_name, appUrl(inviterPayPath(inviter.role)), Date.parse(inv.pay_requested_at ?? "") || 0);
+  return waLink(inviter.phone_e164, text);
 }
 
 /** The state for one invite and one browser. `mine` means this browser holds a matching device cookie. */
@@ -108,9 +131,10 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
 
   const event = await getEvent(inv.event_id);
   const paid = inv.status === "paid";
+  const inviter = await inviterOf(inv);
   const base = {
     guest: inv.guest_first_name,
-    inviter: await inviterName(inv),
+    inviter: inviter?.first_name ?? "",
     event: eventView(event, paid),
     status: inv.status,
     covered: inv.covered,
@@ -118,6 +142,7 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
     hold_ends: inv.expires_at,
     payment: null as PaymentView | null,
     by_member: false,
+    ask_href: null as string | null,
     ticket_code: paid ? inv.ticket_code : null,
     qr: paid && inv.ticket_code ? await ticketQrSvg(inv.ticket_code) : null,
   };
@@ -130,7 +155,11 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
   const mp = await liveMemberPayment(inv.id);
   if (mp?.status === "claimed" && inv.yes_at && p?.status !== "claimed") return { screen: "wait", ...base, by_member: true };
   if (inv.status === "awaiting_confirmation") return { screen: "wait", ...base };
+  // The guest said their inviter is paying. The hold clock keeps running while they wait.
+  if (isAskingInviter(inv)) return { screen: "asked", ...base, ask_href: askHref(inv, inviter) };
   if (inv.status === "said_yes" && p?.status === "not_found") return { screen: "notfound", ...base };
+  // Said Yes and has transfer details but hasn't paid: their seat is saved, and the page opens on paying.
+  if (inv.status === "said_yes" && p?.status === "open") return { screen: "held", ...base };
   return { screen: "card", ...base };
 }
 
@@ -223,6 +252,29 @@ export async function sayYes(inv: Invite): Promise<YesResult> {
     await audit("guest", null, "said_yes", {}, inv.id);
   }
   return { kind: "payment", payment: await paymentView(p) };
+}
+
+/**
+ * The guest tapped {inviter} is paying for me (ask) or I'll pay myself instead (stop asking).
+ * Only while they still owe a transfer. The hold clock is left alone either way.
+ */
+export async function askInviter(inv: Invite, ask: boolean): Promise<boolean> {
+  if (!canAskInviter(inv)) return false;
+  const event = await getEvent(inv.event_id);
+  if (!event.invites_open) return false;
+  if (!!inv.pay_requested_at === ask) return true;
+  const { data } = await db()
+    .from("invites")
+    .update({ pay_requested_at: ask ? new Date().toISOString() : null })
+    .eq("id", inv.id)
+    .eq("event_id", inv.event_id)
+    .eq("covered", false)
+    .in("status", ASK_STATUSES)
+    .select("id")
+    .maybeSingle();
+  if (!data) return false;
+  await audit("guest", null, ask ? "asked_inviter" : "pay_myself", {}, inv.id);
+  return true;
 }
 
 export async function addNoTaps(inviteId: string, delta: number): Promise<number | null> {

@@ -1,6 +1,7 @@
 // Read models for the admin portal: overview numbers, the guest list, the door list and the board.
 // Everything is about one event, except eventBreakdown, which the superadmin uses to see them all.
 import "server-only";
+import { canLetInFree, isAskingInviter } from "@/lib/ask-inviter";
 import { t } from "@/lib/copy";
 import { db } from "@/lib/db";
 import { inviteLink, sweep } from "@/lib/invites";
@@ -8,7 +9,7 @@ import { cardReadyMessage, revealMessage } from "@/lib/messages";
 import { formatNaira } from "@/lib/money";
 import { listTeam, type TeamRow } from "@/lib/people";
 import { maskPhone } from "@/lib/phone";
-import { SLOT_STATUSES, type Invite, type Payment } from "@/lib/types";
+import { SLOT_STATUSES, type Invite, type Payment, type Role } from "@/lib/types";
 import { waLink } from "@/lib/whatsapp";
 
 async function names(eventId: number): Promise<Map<string, string>> {
@@ -34,6 +35,7 @@ export type Activity = { id: string; action: string; line: string; at: string };
 const ACTIVITY_KEYS = new Set([
   "sent", "opened", "said_yes", "claimed", "confirmed", "not_found", "expired", "cancelled", "resent",
   "reset_access", "wrong_attempt", "checked_in", "member_added", "member_removed", "event_updated", "account_switched",
+  "asked_inviter", "let_in_free",
 ]);
 
 export type Overview = {
@@ -107,12 +109,21 @@ export type GuestRow = {
   sentAt: string | null;
   ticketCode: string | null;
   payment: { reference: string; status: Payment["status"]; amount: string; byGuest: boolean } | null;
+  /** The guest asked their inviter to pay for them and is still waiting. */
+  asked: boolean;
+  /** The inviter is a host, so an admin can let this guest in free. */
+  canFree: boolean;
   notifyHref: string | null;
   revealHref: string | null;
 };
 
 export async function guestRows(eventId: number): Promise<GuestRow[]> {
-  const [invites, nameOf] = await Promise.all([allInvites(eventId), names(eventId)]);
+  const [invites, nameOf, { data: roles }] = await Promise.all([
+    allInvites(eventId),
+    names(eventId),
+    db().from("people").select("id, role").or(`event_id.eq.${eventId},event_id.is.null`),
+  ]);
+  const roleOf = new Map((roles ?? []).map((p) => [p.id as string, p.role as Role]));
   const { data: payments } = await db()
     .from("payments")
     .select("invite_id, reference, status, amount_kobo, payer_type, created_at")
@@ -149,6 +160,8 @@ export async function guestRows(eventId: number): Promise<GuestRow[]> {
       sentAt: i.sent_at,
       ticketCode: i.ticket_code,
       payment: latest.get(i.id) ?? null,
+      asked: isAskingInviter(i),
+      canFree: canLetInFree(i, roleOf.get(i.inviter_id) ?? null),
       notifyHref: paid ? waLink(i.guest_phone_e164, cardReadyMessage(i.guest_first_name, link)) : null,
       revealHref: paid ? waLink(i.guest_phone_e164, revealMessage(i.guest_first_name, link)) : null,
     };

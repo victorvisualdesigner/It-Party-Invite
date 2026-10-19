@@ -29,12 +29,17 @@ export type CardDesign = {
   paper: (typeof CARD_PAPERS)[number];
   /** A short line on the card, such as "Champagne on arrival". Empty for none. */
   note: string;
+  /** An optional line under the event name, such as "An evening in white". Empty for none. */
+  subtitle: string;
 };
 
 /** The longest card note. Room for one line on a phone. */
 export const CARD_NOTE_MAX = 80;
 
-export const DEFAULT_CARD: CardDesign = { theme: "emerald", foil: "gold", paper: "cream", note: "" };
+/** The longest line under the event name. */
+export const CARD_SUBTITLE_MAX = 60;
+
+export const DEFAULT_CARD: CardDesign = { theme: "emerald", foil: "gold", paper: "cream", note: "", subtitle: "" };
 
 /** Fills any missing or unknown choice with the default, so an old or odd row still renders. */
 export function cardDesign(raw: unknown): CardDesign {
@@ -46,6 +51,7 @@ export function cardDesign(raw: unknown): CardDesign {
     foil: pick(CARD_FOILS, c.foil, DEFAULT_CARD.foil),
     paper: pick(CARD_PAPERS, c.paper, DEFAULT_CARD.paper),
     note: typeof c.note === "string" ? c.note.slice(0, CARD_NOTE_MAX) : "",
+    subtitle: typeof c.subtitle === "string" ? c.subtitle.slice(0, CARD_SUBTITLE_MAX) : "",
   };
 }
 
@@ -138,6 +144,8 @@ export type Invite = {
   expires_at: string | null;
   hold_remaining_ms: number | null;
   covered: boolean;
+  /** When the guest said, on the transfer screen, that their inviter is paying. Null otherwise. */
+  pay_requested_at: string | null;
   wrong_attempts: number;
   locked_until: string | null;
   ticket_code: string | null;

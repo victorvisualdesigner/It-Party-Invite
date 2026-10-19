@@ -7,6 +7,7 @@ import { audit } from "@/lib/audit";
 import { t } from "@/lib/copy";
 import { db } from "@/lib/db";
 import { appUrl } from "@/lib/env";
+import { hostLoginUrl } from "@/lib/host-link";
 import { getEvent, MIGRATION_HINT } from "@/lib/settings";
 import type { Person } from "@/lib/types";
 import { waLink } from "@/lib/whatsapp";
@@ -80,7 +81,9 @@ async function issueLink(person: Pick<Person, "id" | "first_name" | "phone_e164"
   if (error) throw new Error(`Could not make the setup link: ${error.message}`);
   const event = person.event_id != null ? await getEvent(person.event_id) : null;
   const link = appUrl(`/admin/setup/${token}`);
-  const message = t("admin.admins.link_message", { admin: person.first_name, event: event?.name ?? "", link });
+  // After the one time link, they sign in on their event's own page, never the super admin's.
+  const login = event ? hostLoginUrl(event.id) : appUrl("/admin/login");
+  const message = t("admin.admins.link_message", { admin: person.first_name, event: event?.name ?? "", link, login });
   return { name: person.first_name, link, message, waHref: waLink(person.phone_e164, message) };
 }
 

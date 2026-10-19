@@ -49,6 +49,7 @@ const ICON: Record<string, string> = {
   image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-9 8.5"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  whatsapp: '<path d="M4 20l1.3-4A8.5 8.5 0 1 1 8.4 19z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .8a5 5 0 0 1-2.2-2.2l.8-1-1-2z" fill="currentColor" stroke="none"/>',
 };
 const icon = (name: string) =>
   `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name]}</svg>`;
@@ -181,6 +182,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
   <article class="invite" id="invite">
     ${corner("tl")}${corner("tr")}${corner("bl")}${corner("br")}
     <p class="card-eyebrow" id="card-event"></p>
+    <p class="card-sub" id="card-sub" hidden></p>
     <p class="salute" id="salute"></p>
     <h2 class="display headline" id="card-headline"></h2>
     <dl class="details" id="card-details"></dl>
@@ -203,6 +205,24 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
   <h1 class="display" id="wait-title"></h1>
   <p class="lede" id="wait-body"></p>
   <p class="recap" id="wait-recap" hidden></p>
+  <p class="small">${esc(t("guest.awaiting.small"))}</p>
+</section>
+
+<section class="screen" id="s-held" hidden aria-labelledby="held-title">
+  <div class="env-mount" id="env-held">${envelopeHtml({ glow: true })}</div>
+  <h1 class="display" id="held-title">${esc(t("guest.held.title"))}</h1>
+  <p class="lede" id="held-body"></p>
+  <button class="btn btn-gold btn-wide" type="button" id="held-pay">${esc(t("guest.held.pay"))}</button>
+  <p class="small">${esc(t("guest.awaiting.small"))}</p>
+</section>
+
+<section class="screen" id="s-asked" hidden aria-labelledby="asked-title">
+  <div class="env-mount" id="env-asked">${envelopeHtml({ glow: true })}</div>
+  <h1 class="display" id="asked-title"></h1>
+  <p class="lede" id="asked-body"></p>
+  <p class="recap" id="asked-held" hidden></p>
+  <a class="btn btn-gold btn-wide" id="asked-wa" href="#" target="_blank" rel="noopener noreferrer">${icon("whatsapp")}<span id="asked-wa-label"></span></a>
+  <button class="btn btn-ghost btn-wide" type="button" id="asked-self">${esc(t("guest.asked.pay_myself"))}</button>
   <p class="small">${esc(t("guest.awaiting.small"))}</p>
 </section>
 
@@ -229,6 +249,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
         <span class="foil-sweep" id="foil" aria-hidden="true"></span>
         <div class="t-main">
           <div class="t-top"><span id="t-event"></span><span>${esc(t("guest.ticket.admits"))}</span></div>
+          <p class="t-sub" id="t-sub" hidden></p>
           <h1 class="t-name" id="t-name"></h1>
           <p class="t-by" id="t-by"></p>
           <dl class="t-details" id="t-details"></dl>
@@ -281,6 +302,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
     <p class="error" id="sheet-error" role="alert" hidden></p>
     <div class="sheet-actions">
       <button class="btn btn-gold" type="button" id="btn-sent"></button>
+      <button class="btn btn-ghost" type="button" id="btn-ask" hidden></button>
       <button class="btn btn-ghost" type="button" id="btn-later">${esc(t("guest.transfer.not_now"))}</button>
     </div>
   </section>

@@ -29,13 +29,17 @@ describe("Lagos time", () => {
     expect(fromLagos("", "20:00")).toBeNull();
   });
   it("formats the event date like the card", () => {
-    expect(formatEventDate("2026-12-19T19:00:00.000Z")).toBe("Saturday, 19 December, 8pm");
-    expect(formatEventWhen("2026-12-19T19:00:00.000Z", null)).toBe("Saturday, 19 December, 8pm");
+    expect(formatEventDate("2026-12-19T19:00:00.000Z")).toBe("19th of Dec, 2026 at 8pm");
+    expect(formatEventWhen("2026-12-19T19:00:00.000Z", null)).toBe("19th of Dec, 2026 at 8pm");
+    // Time is 12 hour, in Lagos: 11:30 UTC is 12:30pm, and 23:00 UTC is midnight the next day.
+    expect(formatEventDate("2026-12-12T11:30:00.000Z")).toBe("12th of Dec, 2026 at 12:30pm");
+    expect(formatEventDate("2026-12-01T23:00:00.000Z")).toBe("2nd of Dec, 2026 at 12am");
   });
 
   it("writes a date range for events over several days", () => {
-    expect(formatEventWhen("2027-04-12T19:00:00.000Z", "2027-04-16")).toBe("Monday 12 to Friday 16 April, from 8pm");
-    expect(formatEventWhen("2027-04-30T19:00:00.000Z", "2027-05-02")).toBe("Friday 30 April to Sunday 2 May, from 8pm");
+    expect(formatEventWhen("2027-04-12T19:00:00.000Z", "2027-04-16")).toBe("12th to 16th of Apr, 2027, from 8pm");
+    expect(formatEventWhen("2027-04-30T19:00:00.000Z", "2027-05-02")).toBe("30th of Apr to 2nd of May, 2027, from 8pm");
+    expect(formatEventWhen("2026-12-30T19:00:00.000Z", "2027-01-02")).toBe("30th of Dec, 2026 to 2nd of Jan, 2027, from 8pm");
     expect(eventDates("2027-04-12T19:00:00.000Z", "2027-04-14")).toEqual(["2027-04-12", "2027-04-13", "2027-04-14"]);
     // 11pm UTC is already the next day in Lagos.
     expect(eventDates("2027-04-11T23:30:00.000Z", null)).toEqual(["2027-04-12"]);
@@ -50,8 +54,8 @@ describe("Lagos time", () => {
       dress_code: "Black tie",
     });
     expect(days.map((d) => [d.label, d.name, d.dress])).toEqual([
-      ["Mon 12 Apr", "The Special One", "Black tie"],
-      ["Tue 13 Apr", "White party", "All white"],
+      ["Mon, 12th of Apr", "The Special One", "Black tie"],
+      ["Tue, 13th of Apr", "White party", "All white"],
     ]);
   });
 });
@@ -69,7 +73,7 @@ describe("reveals", () => {
   });
   it("words the hint", () => {
     expect(revealHint("at_time", at, "2026-12-19T19:00:00.000Z")).toBe("48 hours before");
-    expect(revealHint("at_time", "2026-12-01T09:00:00.000Z", "2026-12-19T19:00:00.000Z")).toBe("on 1 December");
+    expect(revealHint("at_time", "2026-12-01T09:00:00.000Z", "2026-12-19T19:00:00.000Z")).toBe("on 1st of Dec, 2026");
     expect(revealHint("after_payment", null, null)).toBe("once you're in");
     expect(revealHint("hidden", null, null)).toBe("soon");
   });
@@ -126,5 +130,14 @@ describe("copy", () => {
       copy.admin.nav.label,
     ];
     for (const s of strings) expect(s).not.toMatch(/\s[-–—]\s/);
+  });
+});
+
+describe("card dates", () => {
+  it("writes ordinals the way people say them", async () => {
+    const { ordinal, formatCardDate } = await import("@/lib/event");
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31, 101, 111].map(ordinal)).toEqual(["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "23rd", "31st", "101st", "111th"]);
+    expect(formatCardDate("2026-12-12")).toBe("12th of Dec, 2026");
+    expect(formatCardDate("2026-09-03", false)).toBe("3rd of Sep");
   });
 });

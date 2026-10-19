@@ -172,7 +172,13 @@ tbody tr:hover { background: rgba(243, 236, 223, 0.55); }
 .pv-card dd { margin: 0; }
 .pv-card dd.muted { font-style: italic; color: var(--ink-600); }
 .pv-days { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.pv-days li { display: grid; }
+.pv-days li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; }
+.pv-days li > span:last-child { display: grid; }
+.pv-sub { margin: 6px 0 0; text-align: center; font-size: 12px; font-style: italic; color: var(--ink-600); }
+.pv-card dd.date { font-size: 12.5px; }
+.day-num { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--gold-500); color: var(--ink-900); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.time12 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.dt12 { display: grid; gap: 8px; }
 .pv-days b { font-weight: var(--weight-ui-strong); }
 .pv-days small { color: var(--ink-600); font-size: 12px; }
 .pv-card dd.price { font-weight: var(--weight-ui-strong); font-size: 16px; }
@@ -258,6 +264,8 @@ tbody tr:hover { background: rgba(243, 236, 223, 0.55); }
 .line-eye:hover, .line-eye[aria-pressed="true"] { color: var(--gold-700); background: var(--honey-50); }
 .login-submit { min-height: 52px; margin-top: 6px; }
 .login-footnote { margin: 0; text-align: center; font-size: 13px; color: var(--ink-600); }
+.login-note { margin: -4px 0 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line); font-size: 13px; line-height: 1.45; color: var(--ink-600); }
+.login-note a { color: var(--gold-700); font-weight: var(--weight-ui-strong); text-underline-offset: 3px; }
 
 .login-home { position: absolute; z-index: 3; left: 30px; bottom: 24px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mist-400); text-decoration: none; }
 .login-home .ico { width: 16px; height: 16px; }
@@ -427,6 +435,9 @@ html:has(.admin-root) { background-color: var(--cream-50); }
 .ev-stats dd { margin: 4px 0 0; font-family: var(--font-display); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .ev-admins { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
 .ev-admins-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ev-host-link { display: grid; gap: 6px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.ev-host-link .link-box { margin: 2px 0 0; }
+.ev-host-acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .ev-admins ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .ev-admins li { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; }
 .ev-admins li .admin-acts { grid-column: 1 / -1; justify-content: flex-start; }

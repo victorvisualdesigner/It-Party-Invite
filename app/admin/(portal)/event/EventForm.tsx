@@ -8,7 +8,7 @@ import { t, tList } from "@/lib/copy";
 import { daysDiffer, eventDates, eventDays, formatDayLabel, formatEventWhen, fromLagos, isRevealed, revealHint } from "@/lib/event";
 import { formatNaira, nairaToKobo } from "@/lib/money";
 import type { EventInput } from "@/lib/schemas";
-import { CARD_FOILS, CARD_NOTE_MAX, CARD_PAPERS, CARD_THEMES, REVEAL_MODES, type RevealMode } from "@/lib/types";
+import { CARD_FOILS, CARD_NOTE_MAX, CARD_PAPERS, CARD_SUBTITLE_MAX, CARD_THEMES, REVEAL_MODES, type RevealMode } from "@/lib/types";
 import { saveEvent } from "./actions";
 
 /** One row of round colour swatches; a radio group underneath, so keys and screen readers work. */
@@ -56,6 +56,7 @@ const FIELD_IDS: Record<string, string> = {
   reveal_date_at: "e-rd-at",
   reveal_venue_at: "e-rv-at",
   card_note: "e-note",
+  card_subtitle: "e-sub",
 };
 
 function Field({ id, label, help, error, children }: { id: string; label: string; help?: string; error?: string; children: ReactNode }) {
@@ -73,6 +74,63 @@ function Field({ id, label, help, error, children }: { id: string; label: string
           {error}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+
+/**
+ * A 12 hour time picker that gives back "HH:MM". The browser's own time box shows 24 hours on many
+ * phones and laptops, so hour, minutes and AM or PM are picked separately.
+ */
+function TimeSelect12({ id, value, onChange, invalid }: { id: string; value: string; onChange: (v: string) => void; invalid?: boolean }) {
+  const m = /^(\d{2}):(\d{2})$/.exec(value);
+  const h24 = m ? Number(m[1]) : null;
+  const minute = m ? m[2] : "00";
+  const hour = h24 == null ? "" : String(h24 % 12 || 12);
+  const pm = h24 != null && h24 >= 12;
+  const minutes = MINUTES.includes(minute) ? MINUTES : [...MINUTES, minute].sort();
+  function emit(h: string, mm: string, isPm: boolean) {
+    if (!h) return onChange("");
+    const n = (Number(h) % 12) + (isPm ? 12 : 0);
+    onChange(`${String(n).padStart(2, "0")}:${mm}`);
+  }
+  const aria = invalid ? { "aria-invalid": true as const } : {};
+  return (
+    <div className="time12">
+      <select className="input num" id={id} value={hour} onChange={(e) => emit(e.target.value, minute, pm)} {...aria}>
+        <option value="">{t("admin.event.time_unset")}</option>
+        {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((h) => (
+          <option key={h} value={h}>
+            {h}
+          </option>
+        ))}
+      </select>
+      <select className="input num" aria-label={t("admin.event.time_minutes")} value={minute} onChange={(e) => emit(hour || "12", e.target.value, pm)}>
+        {minutes.map((mm) => (
+          <option key={mm} value={mm}>
+            {mm}
+          </option>
+        ))}
+      </select>
+      <select className="input" aria-label={t("admin.event.time_ampm")} value={pm ? "pm" : "am"} onChange={(e) => emit(hour || "12", minute, e.target.value === "pm")}>
+        <option value="am">{t("admin.event.am")}</option>
+        <option value="pm">{t("admin.event.pm")}</option>
+      </select>
+    </div>
+  );
+}
+
+/** A date and a 12 hour time, kept as "YYYY-MM-DDTHH:MM" like the old datetime box. */
+function DateTime12({ id, value, onChange, invalid }: { id: string; value: string; onChange: (v: string) => void; invalid?: { [k: string]: unknown } }) {
+  const date = value.slice(0, 10);
+  const time = value.length >= 16 ? value.slice(11, 16) : "";
+  const emit = (d: string, tm: string) => onChange(d ? `${d}T${tm || "00:00"}` : "");
+  return (
+    <div className="dt12">
+      <input className="input" type="date" id={id} value={date} onChange={(e) => emit(e.target.value, time)} {...invalid} />
+      <TimeSelect12 id={`${id}-time`} value={time} onChange={(tm) => emit(date, tm)} />
     </div>
   );
 }
@@ -100,11 +158,12 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
   return (
     <div className="pv-card">
       <p className="ev">{v.name.trim() || " "}</p>
+      {v.card.subtitle.trim() ? <p className="pv-sub">{v.card.subtitle.trim()}</p> : null}
       <p className="sal">{t("guest.card.salutation", { guest: "Ada" })}</p>
       <h3>{t("guest.card.headline", { inviter: hostName })}</h3>
       <dl>
         <dt>{t("guest.card.date_label")}</dt>
-        <dd className={dateShown ? "" : "muted"}>
+        <dd className={dateShown ? "date" : "muted"}>
           {dateShown && startsAt ? formatEventWhen(startsAt, endDate) : t("guest.card.date_hidden")}
         </dd>
         <dt>{t("guest.card.venue_label")}</dt>
@@ -122,9 +181,13 @@ function Preview({ v, hostName }: { v: EventInput; hostName: string }) {
               <ul className="pv-days">
                 {days.map((d) => (
                   <li key={d.date}>
-                    <b>{dateShown ? d.label : t("guest.card.day_n", { n: d.number })}</b>
-                    {d.name !== v.name.trim() ? <span>{d.name}</span> : null}
-                    {d.dress ? <small>{t("guest.card.day_dress", { dress: d.dress })}</small> : null}
+                    <span className="day-num" aria-label={t("guest.card.day_n", { n: d.number })}>
+                      {d.number}
+                    </span>
+                    <span>
+                      <b>{d.name}</b>
+                      {d.dress ? <small>{t("guest.card.day_dress", { dress: d.dress })}</small> : null}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -241,12 +304,23 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
           <Field id="e-name" label={t("admin.event.name_label")} help={t("admin.event.name_help")} error={errors.name}>
             <input className="input" id="e-name" autoComplete="off" {...text("name")} {...invalid("name")} />
           </Field>
+          <Field id="e-sub" label={t("admin.event.subtitle_label")} help={t("admin.event.subtitle_help")} error={errors.card_subtitle}>
+            <input
+              className="input"
+              id="e-sub"
+              autoComplete="off"
+              maxLength={CARD_SUBTITLE_MAX}
+              value={v.card.subtitle}
+              onChange={(e) => set("card", { ...v.card, subtitle: e.target.value })}
+              {...invalid("card_subtitle")}
+            />
+          </Field>
           <div className="cols">
             <Field id="e-date" label={multi ? t("admin.event.first_day_label") : t("admin.event.date_label")} error={errors.date}>
               <input className="input" type="date" id="e-date" {...text("date")} {...invalid("date")} />
             </Field>
             <Field id="e-time" label={t("admin.event.time_label")}>
-              <input className="input" type="time" id="e-time" {...text("time")} aria-invalid={errors.date ? true : undefined} />
+              <TimeSelect12 id="e-time" value={v.time} onChange={(tm) => set("time", tm)} invalid={!!errors.date} />
             </Field>
           </div>
           <label className="switch" htmlFor="e-multi">
@@ -419,7 +493,7 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
             </Field>
             {v.reveal_date_mode === "at_time" ? (
               <Field id="e-rd-at" label={t("admin.event.reveal_at_label")} error={errors.reveal_date_at}>
-                <input className="input" type="datetime-local" id="e-rd-at" {...text("reveal_date_at")} {...invalid("reveal_date_at")} />
+                <DateTime12 id="e-rd-at" value={v.reveal_date_at} onChange={(x) => set("reveal_date_at", x)} invalid={invalid("reveal_date_at")} />
               </Field>
             ) : null}
           </div>
@@ -429,7 +503,7 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
             </Field>
             {v.reveal_venue_mode === "at_time" ? (
               <Field id="e-rv-at" label={t("admin.event.reveal_at_label")} error={errors.reveal_venue_at}>
-                <input className="input" type="datetime-local" id="e-rv-at" {...text("reveal_venue_at")} {...invalid("reveal_venue_at")} />
+                <DateTime12 id="e-rv-at" value={v.reveal_venue_at} onChange={(x) => set("reveal_venue_at", x)} invalid={invalid("reveal_venue_at")} />
               </Field>
             ) : null}
           </div>

@@ -2,6 +2,7 @@
 // The app never says money arrived until an admin confirms it in the bank app.
 import "server-only";
 import { randomInt } from "node:crypto";
+import { ASK_STATUSES, canLetInFree } from "@/lib/ask-inviter";
 import { audit } from "@/lib/audit";
 import { db, isUniqueViolation } from "@/lib/db";
 import { groupAccountNumber } from "@/lib/event";
@@ -10,7 +11,7 @@ import { cardReadyMessage } from "@/lib/messages";
 import { formatNaira, nairaDigits } from "@/lib/money";
 import { getEvent } from "@/lib/settings";
 import { newTicketCode } from "@/lib/tickets";
-import type { Invite, Payment, PayoutAccount } from "@/lib/types";
+import type { Invite, Payment, PayoutAccount, Role } from "@/lib/types";
 import { waLink } from "@/lib/whatsapp";
 
 const LIVE_GUEST: Payment["status"][] = ["open", "claimed", "not_found"];
@@ -157,6 +158,17 @@ export async function claimMemberPayment(paymentId: string, payerId: string, sen
   if (!data) return null;
   const p = data as Payment;
   await audit("member", payerId, "claimed", { reference: p.reference, by_member: true }, p.invite_id);
+  // The guest already said Yes (often after asking their inviter to pay): the clock pauses while
+  // the host checks, just as when the guest claims. Not found resumes it.
+  const inv = await getInvite(p.invite_id);
+  if (inv?.status === "said_yes") {
+    await db()
+      .from("invites")
+      .update({ status: "awaiting_confirmation", ...pausedClock(inv) })
+      .eq("id", inv.id)
+      .eq("event_id", p.event_id)
+      .eq("status", "said_yes");
+  }
   return p;
 }
 
@@ -302,6 +314,33 @@ export async function notFoundPayment(eventId: number, paymentId: string, adminI
   }
   await audit("admin", adminId, "not_found", { reference: p.reference }, inv.id);
   return inv.guest_first_name;
+}
+
+/**
+ * A host's guest asked their inviter to pay. Any admin of the event can let them in free instead:
+ * the invite is covered, and it turns paid now because the guest has already said Yes.
+ */
+export async function letInFree(eventId: number, inviteId: string, adminId: string): Promise<{ guest: string; paid: boolean } | null> {
+  const inv = await getInvite(inviteId);
+  if (!inv || inv.event_id !== eventId) return null;
+  const { data: inviter } = await db().from("people").select("role").eq("id", inv.inviter_id).maybeSingle();
+  if (!canLetInFree(inv, (inviter?.role as Role | undefined) ?? null)) return null;
+  const { data } = await db()
+    .from("invites")
+    .update({ covered: true, expires_at: null, hold_remaining_ms: null })
+    .eq("id", inv.id)
+    .eq("event_id", eventId)
+    .eq("covered", false)
+    .in("status", ASK_STATUSES)
+    .select("*")
+    .maybeSingle();
+  if (!data) return null;
+  const covered = data as Invite;
+  // Nobody needs to transfer now: any unpaid transfer details for this guest stop working.
+  await db().from("payments").update({ status: "void" }).eq("invite_id", inv.id).eq("event_id", eventId).in("status", ["open", "not_found"]);
+  await audit("admin", adminId, "let_in_free", {}, inv.id);
+  const paid = covered.yes_at ? await paidByCover(covered) : null;
+  return { guest: inv.guest_first_name, paid: !!paid };
 }
 
 export type MatchCandidate = { id: string; guest: string; inviter: string; status: Invite["status"]; reference: string | null };

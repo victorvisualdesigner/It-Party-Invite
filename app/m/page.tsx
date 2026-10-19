@@ -36,7 +36,7 @@ export default async function MemberPage() {
     expired: t("member.status.expired"),
   };
   const guests: GuestLine[] = member
-    ? (await memberGuests(member.id)).map((g) => ({
+    ? (await memberGuests(member.id, member.event_id)).map((g) => ({
         id: g.id,
         guest: g.guest,
         status: g.status,
@@ -45,6 +45,7 @@ export default async function MemberPage() {
         taps: g.taps,
         paymentLabel: g.payment === "claimed" ? t("member.pay_sheet.claimed_chip") : g.payment === "confirmed" ? t("member.pay_sheet.confirmed_chip") : null,
         canPay: g.canPay,
+        asked: g.asked,
       }))
     : [];
 

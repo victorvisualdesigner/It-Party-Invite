@@ -55,6 +55,7 @@
       "reveal_hours_before": "{n} hours before",
       "reveal_on_date": "on {date}",
       "date_range": "{from} to {to}, from {time}",
+      "date_at": "{date} at {time}",
       "days_label": "Day by day",
       "day_n": "Day {n}",
       "day_dress": "Dress code: {dress}"
@@ -82,7 +83,8 @@
       "sender_name_placeholder": "As it appears on your bank app",
       "sender_name_error": "Add the name on the account you sent from.",
       "mid_payment_note": "These details are yours until you pay, even if the hosts change accounts.",
-      "no_account": "The transfer details are almost ready. Check back in a little while."
+      "no_account": "The transfer details are almost ready. Check back in a little while.",
+      "ask_inviter": "{inviter} is paying for me"
     },
     "awaiting": {
       "title": "Your card is being pressed",
@@ -91,6 +93,20 @@
       "recap": "Sent from {sender_name}. Reference {reference}.",
       "member_title": "{inviter} is taking care of this",
       "member_body": "Your seat is being paid for. Your card unlocks the moment the hosts confirm it."
+    },
+    "held": {
+      "_about": "After the guest taps I'll pay later, and whenever they come back before paying. Opening the page brings the transfer details straight up.",
+      "title": "Your seat is saved",
+      "body": "We're holding it for you until {expires_at}. Pay any time before then through this same link.",
+      "pay": "Continue to pay"
+    },
+    "asked": {
+      "_about": "After the guest taps {inviter} is paying for me on the transfer sheet. The app does not message the inviter: the guest sends the WhatsApp line.",
+      "title": "Over to {inviter}",
+      "body": "{inviter} will see your ask on their guest list. A quick message makes sure they see it today.",
+      "held": "Your seat stays held until {expires_at}.",
+      "whatsapp": "Message {inviter} on WhatsApp",
+      "pay_myself": "I'll pay myself instead"
     },
     "not_found": {
       "title": "We couldn't find that transfer yet",
@@ -245,7 +261,8 @@
       "expired": "Expired",
       "cancelled": "Cancelled",
       "no_taps": "Fought No {n} times",
-      "covered": "You're paying"
+      "covered": "You're paying",
+      "asked": "Asked you to pay"
     },
     "guest_actions": {
       "resend": "Send again",
@@ -325,6 +342,14 @@
       "show_password": "Show password",
       "hide_password": "Hide password",
       "home": "Home"
+    },
+    "host_login": {
+      "_about": "Each event's own admin sign in at /host/{code}. The super admin copies the link from the event's card.",
+      "page_title": "Admin access",
+      "title": "Sign in to run {event}",
+      "footnote": "Only {event}'s admins sign in here.",
+      "signed_in_as": "You're signed in as {name} on this browser. Signing in here switches it to the admin's account.",
+      "stay": "Stay as {name}"
     },
     "overview": {
       "paid": "Paid",
@@ -419,6 +444,13 @@
       "title": "Event settings",
       "name_label": "Event name",
       "name_help": "Guests see this on the envelope and their card.",
+      "time_unset": "Hour",
+      "time_minutes": "Minutes",
+      "time_ampm": "AM or PM",
+      "am": "AM",
+      "pm": "PM",
+      "subtitle_label": "Line under the name",
+      "subtitle_help": "Optional. A few words under the event name on the card, like An evening in white.",
       "date_label": "Date",
       "time_label": "Start time",
       "venue_label": "Venue",
@@ -464,7 +496,8 @@
         "end_date": "Pick a last day after the first day.",
         "too_many_days": "An event can run for {n} days at most.",
         "hold": "Use a whole number of hours from 1 to {max}.",
-        "card_note": "Keep the note to {n} characters."
+        "card_note": "Keep the note to {n} characters.",
+        "card_subtitle": "Keep the line under the name to {n} characters."
       },
       "multi_day": "Runs over several days",
       "multi_day_help": "For events like 12 to 16 April.",
@@ -576,9 +609,14 @@
       "actions": {
         "reset": "Reset access",
         "cancel": "Cancel invite",
-        "open": "Open their envelope"
+        "open": "Open their envelope",
+        "let_in_free": "Let them in free"
       },
-      "unpaid": "Not yet"
+      "unpaid": "Not yet",
+      "asked": "Asked inviter to pay",
+      "let_in_free_title": "Let {guest} in free",
+      "let_in_free_body": "{guest} asked {inviter} to pay. As a host, {inviter} can let them in without a transfer, and their card unlocks right away.",
+      "let_in_free_done": "{guest} is in, free of charge."
     },
     "invite": {
       "subtitle": "Your own invites. You have Unlimited."
@@ -602,6 +640,8 @@
       "member_removed": "{member} left the team",
       "event_updated": "Event settings saved",
       "account_switched": "Payout account switched",
+      "asked_inviter": "{guest} asked {inviter} to pay",
+      "let_in_free": "{guest} was let in free",
       "empty": "Nothing yet. The first envelope will show up here."
     },
     "admins": {
@@ -627,7 +667,7 @@
       "copy_link": "Copy link",
       "copied": "Link copied.",
       "new_link": "New password link",
-      "link_message": "Hi {admin}, you're now an admin for {event}. Set your password here: {link}",
+      "link_message": "Hi {admin}, you're now an admin for {event}. Set your password here: {link}\n\nAfter that, sign in any time at {login}",
       "empty": "Just you for now. Add someone to share the work.",
       "only_owner": "Only the super admin can add or remove admins.",
       "errors": {
@@ -668,6 +708,9 @@
       "no_admins": "No admin yet. You run it yourself until you add one.",
       "add_admin": "Add an admin",
       "add_admin_title": "Add an admin to {event}",
+      "host_link_label": "Admin sign in link",
+      "host_link_help": "This event's admins sign in here. Open it in a private window to see exactly what they see.",
+      "host_link_open": "Open",
       "totals": "All events together",
       "stats": {
         "paid": "Paid",

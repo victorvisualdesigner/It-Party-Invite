@@ -11,7 +11,7 @@ import { t, tList } from "@/lib/copy";
 import type { KeyedMessage } from "@/lib/invites";
 import { timeAgo } from "@/lib/time";
 import type { InviteStatus } from "@/lib/types";
-import { cancelInviteAction, resetAccessAction } from "./actions";
+import { cancelInviteAction, letInFreeAction, resetAccessAction } from "./actions";
 
 const STATUSES: InviteStatus[] = ["sent", "opened", "said_yes", "awaiting_confirmation", "paid", "expired", "cancelled"];
 const ACTIVE: InviteStatus[] = ["sent", "opened", "said_yes", "awaiting_confirmation"];
@@ -51,7 +51,7 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
   const [status, setStatus] = useState<"all" | InviteStatus>("all");
   const [inviter, setInviter] = useState("all");
   const [q, setQ] = useState("");
-  const [confirm, setConfirm] = useState<{ kind: "reset" | "cancel"; row: GuestRow } | null>(null);
+  const [confirm, setConfirm] = useState<{ kind: "reset" | "cancel" | "free"; row: GuestRow } | null>(null);
   const [keyed, setKeyed] = useState<KeyedMessage | null>(null);
   const cols = tList("admin.guests.columns");
 
@@ -125,6 +125,7 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
                       <td>
                         <span className={`chip chip-${r.status}`}>{t(statusKey(r.status))}</span>
                         {r.covered && r.status !== "paid" ? <span className="chip chip-covered">{t("member.status.covered")}</span> : null}
+                        {r.asked ? <span className="chip chip-asked">{t("admin.guests.asked")}</span> : null}
                       </td>
                       <td className="taps-cell">
                         <b>{r.taps}</b>
@@ -159,6 +160,11 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
                             <a className="icon-btn" href={r.revealHref} target="_blank" rel="noopener noreferrer" title={t("member.guest_actions.nudge_reveal")} aria-label={`${t("member.guest_actions.nudge_reveal")} ${r.guest}`}>
                               <Icon name="spark" />
                             </a>
+                          ) : null}
+                          {r.canFree ? (
+                            <button className="icon-btn" type="button" title={t("admin.guests.actions.let_in_free")} aria-label={t("admin.guests.let_in_free_title", { guest: r.guest })} onClick={() => setConfirm({ kind: "free", row: r })}>
+                              <Icon name="check" />
+                            </button>
                           ) : null}
                           {active || r.status === "paid" ? (
                             <button className="icon-btn" type="button" title={t("admin.guests.actions.reset")} aria-label={`${t("admin.guests.actions.reset")} ${r.guest}`} onClick={() => setConfirm({ kind: "reset", row: r })}>
@@ -217,6 +223,19 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
             const r = await callAction(() => cancelInviteAction(confirm.row.id));
             setConfirm(null);
             toast(r.ok ? t("member.detail.cancel_done") : t("admin.common.error_network"));
+          }}
+        />
+      ) : null}
+      {confirm?.kind === "free" ? (
+        <ConfirmDialog
+          title={t("admin.guests.let_in_free_title", { guest: confirm.row.guest })}
+          body={t("admin.guests.let_in_free_body", { guest: confirm.row.guest, inviter: confirm.row.inviter })}
+          okLabel={t("admin.guests.actions.let_in_free")}
+          onClose={() => setConfirm(null)}
+          onOk={async () => {
+            const r = await callAction(() => letInFreeAction(confirm.row.id));
+            setConfirm(null);
+            toast(r.ok ? t("admin.guests.let_in_free_done", { guest: confirm.row.guest }) : t("admin.common.error_network"));
           }}
         />
       ) : null}

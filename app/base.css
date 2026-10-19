@@ -132,6 +132,9 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 40px; 
 .surface-paper .chip-paid::before { background: var(--gold-400); }
 .surface-paper .chip-expired, .surface-paper .chip-cancelled { color: var(--stone-500); text-decoration: line-through; }
 .surface-paper .chip-covered { color: var(--seal-600); background: var(--rose-50); box-shadow: inset 0 0 0 1px var(--rose-200); }
+/* The guest asked their inviter to pay for them. */
+.surface-dark .chip-asked { color: var(--cream-100); background: rgba(200, 162, 74, 0.2); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.6); }
+.surface-paper .chip-asked { color: var(--honey-800); background: var(--honey-150); box-shadow: inset 0 0 0 1px var(--honey-250); }
 .chip-awaiting_confirmation::before { animation: chip-pulse 1.6s ease-in-out infinite; }
 @keyframes chip-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
 

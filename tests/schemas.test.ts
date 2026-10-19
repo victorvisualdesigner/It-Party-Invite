@@ -21,7 +21,7 @@ const base: EventInput = {
   reveal_date_at: "",
   reveal_venue_mode: "at_time",
   reveal_venue_at: "2026-12-17T20:00",
-  card: { theme: "emerald", foil: "gold", paper: "cream", note: "" },
+  card: { theme: "emerald", foil: "gold", paper: "cream", note: "", subtitle: "" },
 };
 
 describe("event settings", () => {

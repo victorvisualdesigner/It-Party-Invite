@@ -141,5 +141,14 @@
       "{guest}, the seal has loosened a little. Your card has news: {link}",
       "{guest}, it's time. Check your card: {link}"
     ]
+  },
+  "ask_inviter_messages": {
+    "_about": "Sent by the guest from the waiting screen after they tap {inviter} is paying for me. Opens WhatsApp to the inviter's chat. Here {link} is the inviter's own page, where Pay for them sits.",
+    "lines": [
+      "{inviter}, it's {guest}. I said Yes to your invite. Would you take care of my seat? You can pay for me here: {link}",
+      "{inviter}, {guest} here. I'm coming, and I'm hoping my seat is on you. It's one tap from your page: {link}",
+      "Hi {inviter}, it's {guest}. I said Yes. My seat is held while I wait for you to pay for it: {link}",
+      "{inviter}, it's {guest}. You invited me and I said Yes. Could you cover my seat? Here's where: {link}"
+    ]
   }
 }

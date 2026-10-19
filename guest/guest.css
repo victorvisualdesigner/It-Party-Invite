@@ -55,6 +55,7 @@ body {
 .card-eyebrow { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 12px; font-weight: var(--weight-ui-strong); letter-spacing: var(--tracking-eyebrow); text-transform: uppercase; color: var(--gold-700); }
 .card-eyebrow::before, .card-eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(143, 114, 48, 0.55)); }
 .card-eyebrow::after { background: linear-gradient(90deg, rgba(143, 114, 48, 0.55), transparent); }
+.card-sub { margin: 6px 0 0; text-align: center; font-size: 14px; font-style: italic; line-height: 1.35; color: var(--ink-600); }
 .salute { margin: 18px 0 0; font-family: var(--font-script); font-weight: 700; font-size: 46px; line-height: 1.05; color: var(--ink-600); min-height: 1.1em; }
 .salute .ch { display: inline-block; white-space: pre; }
 .headline { margin: 2px 0 22px; font-size: 26px; font-weight: 600; line-height: 1.16; letter-spacing: var(--tracking-display); color: var(--ink-900); }
@@ -64,8 +65,11 @@ body {
 .details dd small { display: block; color: var(--ink-600); font-size: 13px; }
 .details dd.price { font-size: 20px; font-weight: var(--weight-ui-strong); font-variant-numeric: tabular-nums; }
 .details dd.muted { color: var(--ink-600); font-style: italic; }
+.details dd.date, .t-details dd.date { font-size: 14px; }
 .details .days, .t-details .days { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.details .days li, .t-details .days li { display: grid; gap: 1px; }
+.details .days li, .t-details .days li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.details .days li > span:last-child, .t-details .days li > span:last-child { display: grid; gap: 1px; }
+.day-num { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; background: var(--gold-500); color: var(--ink-900); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .details .days b, .t-details .days b { font-weight: var(--weight-ui-strong); }
 .details .days small { display: block; color: var(--ink-600); font-size: 13px; }
 .card-note { margin: 16px 0 0; font-style: italic; font-size: 15px; line-height: 1.45; color: var(--gold-700); text-align: center; text-wrap: balance; }
@@ -112,6 +116,8 @@ body {
 .sheet .field { margin-bottom: 14px; }
 .sheet-actions { display: grid; gap: 10px; }
 .sheet-actions .btn { min-height: 54px; }
+/* Buttons that carry a name can wrap on a narrow phone instead of running off the edge. */
+#btn-ask, #asked-wa { white-space: normal; text-align: center; line-height: 1.25; padding-block: 10px; }
 
 /* Awaiting */
 .recap { display: inline-flex; gap: 10px; align-items: center; margin: 0; padding: 10px 16px; border-radius: var(--radius-md); text-align: left; max-width: 34ch; background: rgba(10, 29, 23, 0.55); box-shadow: inset 0 0 0 1px var(--green-700); font-size: 14px; color: var(--mist-400); }
@@ -144,6 +150,7 @@ body {
 .t-main { position: relative; padding: 28px 26px 24px; }
 .foil-sweep { position: absolute; top: -20%; bottom: -20%; left: -50%; width: 38%; background: linear-gradient(90deg, transparent, rgba(255, 236, 190, 0.14), transparent); transform: skewX(-18deg); pointer-events: none; }
 .t-top { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; font-weight: var(--weight-ui-strong); letter-spacing: var(--tracking-eyebrow); text-transform: uppercase; color: var(--gold-400); }
+.t-sub { margin: 6px 0 0; font-size: 13px; font-style: italic; color: var(--mist-400); }
 .ticket .t-name { margin: 22px 0 2px; padding: 0.04em 0.12em 0.04em 0; font-family: var(--font-script); font-size: 88px; font-weight: 700; line-height: 0.95; letter-spacing: 0; white-space: nowrap;
   background: linear-gradient(100deg, var(--foil-dark) 0%, var(--foil-light) 36%, var(--gold-500) 54%, var(--gold-300) 74%, var(--foil-dark) 100%); background-size: 200% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent; }

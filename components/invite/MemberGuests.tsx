@@ -16,6 +16,8 @@ export type GuestLine = {
   taps: number;
   paymentLabel: string | null;
   canPay: boolean;
+  /** The guest asked this member to pay for them. */
+  asked: boolean;
 };
 
 export function MemberGuests({
@@ -43,10 +45,13 @@ export function MemberGuests({
                 </span>
               </div>
               {r.canPay ? (
-                <button className="btn btn-ghost btn-sm" type="button" onClick={() => setPaying(r)}>
-                  <Icon name="card" />
-                  <span>{t("member.new_invite.pay_button", { guest: r.guest })}</span>
-                </button>
+                <span className="g-act">
+                  {r.asked ? <span className="chip chip-asked">{t("member.status.asked")}</span> : null}
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => setPaying(r)}>
+                    <Icon name="card" />
+                    <span>{t("member.new_invite.pay_button", { guest: r.guest })}</span>
+                  </button>
+                </span>
               ) : r.paymentLabel ? (
                 <span className="g-paid">
                   <Icon name="check" />

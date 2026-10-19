@@ -19,6 +19,8 @@ export type EventCardView = {
   name: string;
   when: string;
   current: boolean;
+  /** This event's own admin sign in page. */
+  hostLink: string;
   stats: {
     paid: number;
     awaiting: number;
@@ -302,6 +304,14 @@ export function EventCard({ event }: { event: EventCardView }) {
     </div>
   );
 
+  function copyHostLink() {
+    const done = () => toast(t("admin.admins.copied"));
+    try {
+      navigator.clipboard.writeText(event.hostLink).then(done, done);
+    } catch {
+      done();
+    }
+  }
   async function openIt() {
     const result = await callAction(() => openEventAction(event.id));
     if (result.ok) router.push("/admin");
@@ -373,6 +383,21 @@ export function EventCard({ event }: { event: EventCardView }) {
         ) : (
           <p className="quiet">{t("admin.events.no_admins")}</p>
         )}
+        <div className="ev-host-link">
+          <b>{t("admin.events.host_link_label")}</b>
+          <span className="help">{t("admin.events.host_link_help")}</span>
+          <p className="link-box">{event.hostLink}</p>
+          <div className="ev-host-acts">
+            <button className="btn btn-ghost btn-sm" type="button" onClick={copyHostLink}>
+              <Icon name="copy" />
+              <span>{t("admin.admins.copy_link")}</span>
+            </button>
+            <a className="btn btn-ghost btn-sm" href={event.hostLink} target="_blank" rel="noopener noreferrer">
+              <Icon name="eye" />
+              <span>{t("admin.events.host_link_open")}</span>
+            </a>
+          </div>
+        </div>
       </section>
       {adding ? (
         <AddAdminDialog

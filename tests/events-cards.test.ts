@@ -11,7 +11,10 @@ describe("card design", () => {
       foil: "silver",
       paper: "cream",
       note: "Champagne on arrival",
+      subtitle: "",
     });
+    expect(cardDesign({ subtitle: "An evening in white" }).subtitle).toBe("An evening in white");
+    expect(cardDesign({ subtitle: "x".repeat(200) }).subtitle).toHaveLength(60);
   });
 });
 
@@ -50,7 +53,12 @@ describe("event settings keep the card design", () => {
       reveal_date_mode: "card" as const, reveal_date_at: "", reveal_venue_mode: "card" as const, reveal_venue_at: "",
     };
     const ok = parseEventInput({ ...base, card: { theme: "wine", foil: "rose", paper: "blush", note: "  Champagne   on arrival " } });
-    expect(ok.ok && ok.value.card).toEqual({ theme: "wine", foil: "rose", paper: "blush", note: "Champagne on arrival" });
+    // Settings saved before the line under the name existed still parse, with no line.
+    expect(ok.ok && ok.value.card).toEqual({ theme: "wine", foil: "rose", paper: "blush", note: "Champagne on arrival", subtitle: "" });
+    const sub = parseEventInput({ ...base, card: { theme: "wine", foil: "rose", paper: "blush", note: "", subtitle: "  An evening   in white " } });
+    expect(sub.ok && sub.value.card.subtitle).toBe("An evening in white");
+    const longSub = parseEventInput({ ...base, card: { theme: "wine", foil: "rose", paper: "blush", note: "", subtitle: "x".repeat(61) } });
+    expect(!longSub.ok && longSub.errors.card_subtitle).toBe(t("admin.event.errors.card_subtitle", { n: 60 }));
     const long = parseEventInput({ ...base, card: { theme: "wine", foil: "rose", paper: "blush", note: "x".repeat(81) } });
     expect(!long.ok && long.errors.card_note).toBe(t("admin.event.errors.card_note", { n: 80 }));
   });

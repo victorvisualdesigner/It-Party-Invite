@@ -4,9 +4,9 @@ import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { callAction } from "@/lib/client-action";
-import { signIn } from "./actions";
+import { signIn, signInToEvent } from "./actions";
 
-type Labels = {
+export type LoginLabels = {
   title: string;
   email: string;
   password: string;
@@ -18,7 +18,13 @@ type Labels = {
   footnote: string;
 };
 
-export function LoginForm({ labels }: { labels: Labels }) {
+/** Someone else is already signed in on this browser: say who, and offer to stay as them. */
+export type SignedInNote = { text: string; stayLabel: string; stayHref: string };
+
+/**
+ * Email and password. With `code`, this is one event's admin sign in: only that event's admins get in.
+ */
+export function LoginForm({ labels, code, note }: { labels: LoginLabels; code?: string; note?: SignedInNote }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +37,7 @@ export function LoginForm({ labels }: { labels: Labels }) {
     if (pending) return;
     setError(null);
     startTransition(async () => {
-      const result = await callAction(() => signIn({ email, password }));
+      const result = await callAction(() => (code ? signInToEvent(code, { email, password }) : signIn({ email, password })));
       if (result.ok) {
         router.replace("/admin");
         router.refresh();
@@ -44,6 +50,11 @@ export function LoginForm({ labels }: { labels: Labels }) {
   return (
     <form className="login-card" noValidate onSubmit={submit} aria-describedby={error ? "login-error" : undefined}>
       <h1 className="login-title">{labels.title}</h1>
+      {note ? (
+        <p className="login-note">
+          {note.text} <a href={note.stayHref}>{note.stayLabel}</a>
+        </p>
+      ) : null}
       <div className="line-field">
         <label htmlFor="l-email">{labels.email}</label>
         <div className="line-input">

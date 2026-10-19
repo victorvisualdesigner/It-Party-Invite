@@ -72,7 +72,13 @@
     try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
   }
   function fmtTime(ts) { return new Date(ts).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }).replace(/\s/g, "").toLowerCase(); }
-  function fmtShort(ts) { return new Date(ts).toLocaleDateString("en-GB", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" }) + ", " + fmtTime(ts); }
+  // Dates read like the card: "22nd of Oct, 2026 at 7:21pm". Lagos is UTC+1 all year.
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function ordinal(n) { var v = n % 100; return n + (v >= 11 && v <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" })[n % 10] || "th"); }
+  function fmtShort(ts) {
+    var d = new Date(new Date(ts).getTime() + 3600e3).toISOString();
+    return t("guest.card.date_at", { date: ordinal(+d.slice(8, 10)) + " of " + MONTHS[+d.slice(5, 7) - 1] + ", " + d.slice(0, 4), time: fmtTime(ts) });
+  }
   function left(ms) { ms = Math.max(0, ms); var h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 60e3); return h > 0 ? h + "h " + m + "m" : m + "m"; }
   function holdEnds(s) { return s && s.hold_ends ? Date.parse(s.hold_ends) : null; }
 
@@ -104,7 +110,7 @@
   if (visibleNow) current = visibleNow.id;
 
   /* ---------- Screens ---------- */
-  var SCREEN = { lock: "s-lock", rest: "s-rest", stranger: "s-stranger", claimed: "s-claimed", card: "s-card", wait: "s-wait", notfound: "s-notfound", covered: "s-covered", ticket: "s-ticket", expired: "s-ended", cancelled: "s-ended", closed: "s-ended" };
+  var SCREEN = { lock: "s-lock", rest: "s-rest", stranger: "s-stranger", claimed: "s-claimed", card: "s-card", held: "s-held", wait: "s-wait", asked: "s-asked", notfound: "s-notfound", covered: "s-covered", ticket: "s-ticket", expired: "s-ended", cancelled: "s-ended", closed: "s-ended" };
   function go(id) {
     var from = current && document.getElementById(current), to = document.getElementById(id);
     if (from === to) { if (to) to.hidden = false; return Promise.resolve(); }
@@ -130,6 +136,10 @@
       if (c && c[k]) root.setAttribute(a, c[k]); else root.removeAttribute(a);
     });
   }
+  function subInto(el, s) {
+    var sub = s && s.event && s.event.card && s.event.card.subtitle;
+    el.textContent = sub || ""; el.hidden = !sub;
+  }
   function noteInto(el, s) {
     var n = s && s.event && s.event.card && s.event.card.note;
     el.textContent = n || ""; el.hidden = !n;
@@ -143,6 +153,8 @@
       if (s.screen === "lock" && opts.arrive) arrive();
       if (s.screen === "card" && opts.reveal) revealCard();
       if (s.screen === "ticket") { fitName(); flipTicket(!!opts.flip); }
+      // Coming back to a saved seat: the transfer details come straight up.
+      if (s.screen === "held" && (opts.arrive || opts.reveal) && s.payment) openSheet(s.payment, false);
     });
   }
 
@@ -150,12 +162,14 @@
   function boldInto(str, value) { return esc(str).replace("\u0001", "<b>" + esc(value) + "</b>"); }
   function detailsHTML(s, forTicket) {
     var ev = s.event, rows = [];
-    rows.push([t("guest.card.date_label"), ev.date ? esc(ev.date) : esc(t("guest.card.date_hidden")), ev.date ? "" : "muted"]);
+    rows.push([t("guest.card.date_label"), ev.date ? esc(ev.date) : esc(t("guest.card.date_hidden")), ev.date ? "date" : "muted"]);
     rows.push([t("guest.card.venue_label"), ev.venue ? esc(ev.venue) + (ev.venue_address ? "<small>" + esc(ev.venue_address) + "</small>" : "") : esc(t("guest.card.venue_hidden", { venue_reveal_hint: ev.venue_hint })), ev.venue ? "" : "muted"]);
     if (ev.days && ev.days.length && ev.days_differ) {
-      rows.push([t("guest.card.days_label"), '<ul class="days">' + ev.days.map(function (d) {
-        return "<li><b>" + esc(d.label) + "</b>" + (d.name !== ev.name ? "<span>" + esc(d.name) + "</span>" : "") +
-          (d.dress ? "<small>" + esc(t("guest.card.day_dress", { dress: d.dress })) + "</small>" : "") + "</li>";
+      // Each day: its number in a filled circle beside its name. No dates here.
+      rows.push([t("guest.card.days_label"), '<ul class="days">' + ev.days.map(function (d, i) {
+        var n = d.number || i + 1;
+        return '<li><span class="day-num" aria-hidden="true">' + n + '</span><span><span class="sr">' + esc(t("guest.card.day_n", { n: n })) + ", </span><b>" + esc(d.name) + "</b>" +
+          (d.dress ? "<small>" + esc(t("guest.card.day_dress", { dress: d.dress })) + "</small>" : "") + "</span></li>";
       }).join("") + "</ul>", ""]);
     } else if (ev.dress) rows.push([t("guest.card.dress_label"), esc(ev.dress), ""]);
     if (!forTicket) rows.push([t("guest.card.price_label"), s.covered ? esc(t("guest.card.covered_value", { inviter: s.inviter })) : esc(ev.price), s.covered ? "muted" : "price"]);
@@ -169,6 +183,7 @@
     rest: function (s) { $("#rest-body").textContent = t("guest.lock.error_locked", { minutes: s.minutes, inviter_hint: t("guest.lock.inviter_hint_fallback") }); },
     card: function (s) {
       $("#card-event").textContent = s.event.name;
+      subInto($("#card-sub"), s);
       var sal = t("guest.card.salutation", { guest: s.guest });
       $("#salute").setAttribute("aria-label", sal);
       $("#salute").innerHTML = sal.split("").map(function (c) { return '<span class="ch" aria-hidden="true">' + esc(c) + "</span>"; }).join("");
@@ -190,6 +205,22 @@
       } else r.hidden = true;
       var to = $("#env-wait .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest });
     },
+    held: function (s) {
+      var ends = holdEnds(s);
+      $("#held-body").textContent = ends ? t("guest.held.body", { expires_at: fmtShort(ends) }) : t("guest.transfer.not_now_note", { expires_at: "" });
+      var to = $("#env-held .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest });
+    },
+    asked: function (s) {
+      $("#asked-title").textContent = t("guest.asked.title", { inviter: s.inviter });
+      $("#asked-body").textContent = t("guest.asked.body", { inviter: s.inviter });
+      var held = $("#asked-held"), ends = holdEnds(s);
+      if (ends) { held.innerHTML = icon("clock") + "<span>" + esc(t("guest.asked.held", { expires_at: fmtShort(ends) })) + "</span>"; held.hidden = false; }
+      else held.hidden = true;
+      $("#asked-wa-label").textContent = t("guest.asked.whatsapp", { inviter: s.inviter });
+      var wa = $("#asked-wa");
+      if (s.ask_href) { wa.href = s.ask_href; wa.hidden = false; } else wa.hidden = true;
+      var to = $("#env-asked .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest });
+    },
     notfound: function (s) {
       var p = s.payment || {};
       $("#nf-body").innerHTML = esc(t("guest.not_found.body", { amount: "\u0001", account_name: "\u0002" })).replace("\u0001", "<b>" + esc(p.amount) + "</b>").replace("\u0002", "<b>" + esc(p.account_name) + "</b>");
@@ -197,6 +228,7 @@
     covered: function (s) { $("#cov-body").textContent = t("guest.covered.body", { inviter: s.inviter }); var to = $("#env-covered .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest }); },
     ticket: function (s) {
       $("#t-event").textContent = s.event.name;
+      subInto($("#t-sub"), s);
       $("#t-name").textContent = s.guest;
       $("#t-by").textContent = t("guest.ticket.invited_by", { inviter: s.inviter });
       $("#t-back-to").textContent = t("guest.card.letter_to", { guest: s.guest });
@@ -620,6 +652,7 @@
       rowHTML(t("guest.transfer.reference_label"), p.reference, p.reference, t("guest.transfer.reference_label"), "ref");
     $("#refund").textContent = t("guest.transfer.refund_line", { refund_rule: (state && state.event && state.event.refund) || t("guest.transfer.refund_default") });
     if (p.sender_name) $("#sender").value = p.sender_name;
+    $("#btn-ask").textContent = t("guest.transfer.ask_inviter", { inviter: (state && state.inviter) || "" });
     $("#sheet-error").hidden = true;
     sheetOpen = true; sheet.hidden = false;
     renderHold(); clearInterval(holdT); holdT = setInterval(renderHold, 30000);
@@ -648,6 +681,8 @@
     $("#sent-step").hidden = n === 0;
     $("#sender-error").hidden = true;
     $("#btn-sent").textContent = n === 0 ? t("guest.transfer.sent_button") : t("guest.transfer.confirm_sent");
+    // Asking the inviter is a choice before the transfer, not after the guest says they sent it.
+    $("#btn-ask").hidden = n !== 0 || !(state && state.inviter);
     if (n === 1) setTimeout(function () { $("#sender").focus(); }, 60);
   }
   $("#rows").addEventListener("click", function (e) {
@@ -657,7 +692,7 @@
   var claiming = false;
   $("#btn-sent").addEventListener("click", async function () {
     if (sentStep === 0) { setSentStep(1); return; }
-    if (claiming) return;
+    if (claiming || asking) return;
     var name = $("#sender").value.trim();
     if (name.length < 2) { $("#sender-error").hidden = false; $("#sender").setAttribute("aria-invalid", "true"); $("#sender").focus(); return; }
     $("#sender").removeAttribute("aria-invalid");
@@ -671,15 +706,37 @@
     await closeSheet();
     route(r.state);
   });
-  $("#btn-later").addEventListener("click", async function () {
+  // Leaving the transfer sheet without paying goes to the screen the server says this guest is on:
+  // a saved seat, a transfer that wasn't found, and so on. Never back to Yes or No once they said Yes.
+  async function leaveSheet() {
     await closeSheet();
+    if (state && state.screen && state.screen !== "card") { route(state); return true; }
+    return false;
+  }
+  $("#btn-later").addEventListener("click", async function () {
+    if (await leaveSheet()) return;
     var note = $("#later-note"), ends = holdEnds(state);
     note.textContent = t("guest.transfer.not_now_note", { expires_at: ends ? fmtShort(ends) : "" });
     note.hidden = false;
     if (!reduced) anim(note, [{ opacity: 0 }, { opacity: 1 }], { duration: 300 });
   });
-  $("#scrim").addEventListener("click", closeSheet);
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && sheetOpen) closeSheet(); });
+  // The guest says their inviter is paying. The server records it; the guest sends the WhatsApp line.
+  var asking = false;
+  $("#btn-ask").addEventListener("click", async function () {
+    if (asking || claiming) return;
+    var b = this; asking = true; working(b, true);
+    var r;
+    try { r = await api("ask-inviter", { ask: true }); } catch (e) {
+      asking = false; working(b, false);
+      $("#sheet-error").textContent = t("guest.network"); $("#sheet-error").hidden = false; return;
+    }
+    asking = false; working(b, false);
+    await closeSheet();
+    if (r && r.state) route(r.state);
+  });
+  $("#scrim").addEventListener("click", leaveSheet);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && sheetOpen) leaveSheet(); });
+  $("#held-pay").addEventListener("click", function () { if (state && state.payment) openSheet(state.payment, false); });
 
   /* ---------- Not found and covered ---------- */
   $("#nf-retry").addEventListener("click", async function () {
@@ -696,11 +753,23 @@
   });
   $("#cov-open").addEventListener("click", function () { landed(state); });
 
+  /* ---------- Asked the inviter ---------- */
+  $("#asked-self").addEventListener("click", async function () {
+    var b = this; if (b.disabled) return; working(b, true);
+    var r;
+    try { r = await api("ask-inviter", { ask: false }); } catch (e) { working(b, false); toast(t("guest.network")); return; }
+    working(b, false);
+    var s = r && r.state;
+    if (!s) return;
+    // Straight back to the transfer sheet, with the same reference and account as before.
+    route(s).then(function () { if ((s.screen === "card" || s.screen === "held") && s.payment) openSheet(s.payment, false); });
+  });
+
   async function landed(s) {
     if (seq) return;
     seq = true;
     haptic([20, 60, 20]);
-    if (!reduced && (current === "s-wait" || current === "s-covered")) {
+    if (!reduced && (current === "s-wait" || current === "s-asked" || current === "s-held" || current === "s-covered")) {
       var seal = document.querySelector("#" + current + " .seal");
       anim(seal, [{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.7)", opacity: 0 }], { duration: 560, easing: E.in, fill: "forwards" });
       await wait(260);
@@ -797,20 +866,23 @@
     };
     var ev = s.event, VALUE = "400 40px " + UI, SMALL = "400 30px " + UI, BOLD = "600 36px " + UI, rows = [];
     var add = function (label, parts) { rows.push({ label: label, parts: parts }); };
-    add(t("guest.card.date_label"), [{ font: VALUE, color: "--mist-100", lines: wrap(ev.date || t("guest.card.date_hidden"), VALUE, VW) }]);
+    var DATE = "400 34px " + UI;
+    add(t("guest.card.date_label"), [{ font: DATE, color: "--mist-100", lines: wrap(ev.date || t("guest.card.date_hidden"), DATE, VW) }]);
     var where = [{ font: VALUE, color: "--mist-100", lines: wrap(ev.venue || t("guest.card.venue_hidden", { venue_reveal_hint: ev.venue_hint }), VALUE, VW) }];
     if (ev.venue && ev.venue_address) where.push({ font: SMALL, color: "--mist-400", lines: wrap(ev.venue_address, SMALL, VW) });
     add(t("guest.card.venue_label"), where);
+    var DAY_PAD = 60;
     if (ev.days && ev.days.length && ev.days_differ) {
       var dayParts = [];
       ev.days.forEach(function (d, i) {
-        dayParts.push({ font: BOLD, color: "--mist-100", lines: wrap(d.label + (d.name !== ev.name ? ", " + d.name : ""), BOLD, VW), gap: i ? 22 : 0 });
-        if (d.dress) dayParts.push({ font: SMALL, color: "--mist-400", lines: wrap(t("guest.card.day_dress", { dress: d.dress }), SMALL, VW) });
+        dayParts.push({ font: BOLD, color: "--mist-100", lines: wrap(d.name, BOLD, VW - DAY_PAD), gap: i ? 22 : 0, num: d.number || i + 1 });
+        if (d.dress) dayParts.push({ font: SMALL, color: "--mist-400", lines: wrap(t("guest.card.day_dress", { dress: d.dress }), SMALL, VW - DAY_PAD), indent: DAY_PAD });
       });
       add(t("guest.card.days_label"), dayParts);
     } else if (ev.dress) add(t("guest.card.dress_label"), [{ font: VALUE, color: "--mist-100", lines: wrap(ev.dress, VALUE, VW) }]);
     var lineH = function (font) { return parseInt(/(\d+)px/.exec(font)[1], 10) * 1.3; };
-    var rowsTop = 606, y = rowsTop;
+    var subtitle = ev.card && ev.card.subtitle, SUB = "italic 400 32px " + UI, OFF = subtitle ? 50 : 0;
+    var rowsTop = 606 + OFF, y = rowsTop;
     rows.forEach(function (r) { r.y = y; r.parts.forEach(function (p) { y += (p.gap || 0) + p.lines.length * lineH(p.font); }); y += 46; });
     var NOTE = "italic 400 34px " + UI, note = ev.card && ev.card.note ? wrap(ev.card.note, NOTE, W - 180) : [], noteY = y + 10;
     y += note.length ? note.length * lineH(NOTE) + 24 : 0;
@@ -832,19 +904,26 @@
     x.fillStyle = v("--gold-400"); x.font = "600 30px " + UI; track("5px");
     x.textAlign = "left"; x.fillText(ev.name.toUpperCase(), 90, 132);
     x.textAlign = "right"; x.fillText(t("guest.ticket.admits").toUpperCase(), W - 90, 132); x.textAlign = "left"; track("0px");
+    if (subtitle) { x.fillStyle = v("--mist-400"); x.font = SUB; x.fillText(subtitle, 90, 186); }
     var size = 260; x.font = "700 " + size + "px 'Tangerine'"; while (x.measureText(s.guest).width > W - 200 && size > 96) { size -= 8; x.font = "700 " + size + "px 'Tangerine'"; }
     var fg = x.createLinearGradient(90, 0, 90 + x.measureText(s.guest).width, 0);
     fg.addColorStop(0, v("--foil-dark")); fg.addColorStop(0.36, v("--foil-light")); fg.addColorStop(0.54, v("--gold-500")); fg.addColorStop(0.74, v("--gold-300")); fg.addColorStop(1, v("--foil-dark"));
-    x.fillStyle = fg; x.fillText(s.guest, 90, 340);
-    x.fillStyle = v("--gold-300"); x.font = "700 84px 'Tangerine'"; x.fillText(t("guest.ticket.invited_by", { inviter: s.inviter }), 90, 462);
-    x.fillStyle = "rgba(200,162,74,.3)"; x.fillRect(90, 516, W - 180, 2);
+    x.fillStyle = fg; x.fillText(s.guest, 90, 340 + OFF);
+    x.fillStyle = v("--gold-300"); x.font = "700 84px 'Tangerine'"; x.fillText(t("guest.ticket.invited_by", { inviter: s.inviter }), 90, 462 + OFF);
+    x.fillStyle = "rgba(200,162,74,.3)"; x.fillRect(90, 516 + OFF, W - 180, 2);
     rows.forEach(function (r) {
       x.fillStyle = v("--mist-400"); x.font = "600 26px " + UI; track("4px"); x.fillText(r.label.toUpperCase(), 90, r.y); track("0px");
       var yy = r.y + 4;
       r.parts.forEach(function (p) {
         yy += p.gap || 0;
+        if (p.num) {
+          // The day's number in a filled circle, like the card.
+          x.fillStyle = v("--gold-500"); x.beginPath(); x.arc(VX + 22, yy - 12, 22, 0, Math.PI * 2); x.fill();
+          x.fillStyle = v("--ink-900"); x.font = "700 24px " + UI; x.textAlign = "center"; x.fillText(String(p.num), VX + 22, yy - 3); x.textAlign = "left";
+        }
         x.fillStyle = v(p.color); x.font = p.font;
-        p.lines.forEach(function (l, i) { x.fillText(l, VX, yy + i * lineH(p.font)); });
+        var px = VX + (p.num || p.indent ? DAY_PAD : 0);
+        p.lines.forEach(function (l, i) { x.fillText(l, px, yy + i * lineH(p.font)); });
         yy += p.lines.length * lineH(p.font);
       });
     });
@@ -900,11 +979,11 @@
   var polling = false;
   function refresh() {
     if (seq || polling || !state || document.hidden) return;
-    if (current !== "s-wait" && current !== "s-card" && current !== "s-notfound") return;
+    if (current !== "s-wait" && current !== "s-asked" && current !== "s-held" && current !== "s-card" && current !== "s-notfound") return;
     polling = true;
     api("state").then(function (s) {
       polling = false;
-      if (current === "s-wait" && s.screen === "ticket") { landed(s); return; }
+      if ((current === "s-wait" || current === "s-asked" || current === "s-held") && s.screen === "ticket") { if (sheetOpen) closeSheet(); landed(s); return; }
       if (s.screen === state.screen) { state = s; return; }
       if (current === "s-card" && (s.screen === "card" || sheetOpen)) { state = s; return; }
       if (sheetOpen) closeSheet();

@@ -61,3 +61,12 @@ export function revealMessage(guest: string, link: string): string {
   const lines = messages.reveal_messages.lines;
   return fill(lines[randomInt(lines.length)], { guest, link });
 }
+
+/**
+ * The line a guest sends their inviter after tapping {inviter} is paying for me. `link` is the
+ * inviter's own page. `pick` keeps the same line across polls of the waiting screen.
+ */
+export function askInviterMessage(inviter: string, guest: string, link: string, pick = randomInt(1e6)): string {
+  const lines = messages.ask_inviter_messages.lines;
+  return fill(lines[Math.abs(Math.trunc(pick)) % lines.length], { inviter, guest, link });
+}

@@ -4,7 +4,7 @@ import { t } from "@/lib/copy";
 import { eventDates, fromLagos, lagosDate, MAX_EVENT_DAYS } from "@/lib/event";
 import { nairaToKobo } from "@/lib/money";
 import { normalizePhone } from "@/lib/phone";
-import { CARD_FOILS, CARD_NOTE_MAX, CARD_PAPERS, CARD_THEMES, REVEAL_MODES, type EventDay, type EventRow, type RevealMode } from "@/lib/types";
+import { CARD_FOILS, CARD_NOTE_MAX, CARD_PAPERS, CARD_SUBTITLE_MAX, CARD_THEMES, REVEAL_MODES, type EventDay, type EventRow, type RevealMode } from "@/lib/types";
 import type { FieldErrors } from "@/lib/action";
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; errors: FieldErrors };
@@ -32,7 +32,13 @@ export const eventInputSchema = z.object({
   reveal_date_at: text(16),
   reveal_venue_mode: z.enum(REVEAL_MODES),
   reveal_venue_at: text(16),
-  card: z.object({ theme: z.enum(CARD_THEMES), foil: z.enum(CARD_FOILS), paper: z.enum(CARD_PAPERS), note: text(200) }),
+  card: z.object({
+    theme: z.enum(CARD_THEMES),
+    foil: z.enum(CARD_FOILS),
+    paper: z.enum(CARD_PAPERS),
+    note: text(200),
+    subtitle: text(200).default(""),
+  }),
 });
 export type EventInput = z.infer<typeof eventInputSchema>;
 
@@ -115,6 +121,8 @@ export function parseEventInput(raw: unknown): Parsed<EventPatch> {
 
   const note = input.card.note.trim().replace(/\s+/g, " ");
   if (note.length > CARD_NOTE_MAX) errors.card_note = t("admin.event.errors.card_note", { n: CARD_NOTE_MAX });
+  const subtitle = input.card.subtitle.trim().replace(/\s+/g, " ");
+  if (subtitle.length > CARD_SUBTITLE_MAX) errors.card_subtitle = t("admin.event.errors.card_subtitle", { n: CARD_SUBTITLE_MAX });
 
   if (Object.keys(errors).length) return { ok: false, errors };
   return {
@@ -137,7 +145,7 @@ export function parseEventInput(raw: unknown): Parsed<EventPatch> {
       reveal_date_at: revealDateAt,
       reveal_venue_mode: input.reveal_venue_mode,
       reveal_venue_at: revealVenueAt,
-      card: { theme: input.card.theme, foil: input.card.foil, paper: input.card.paper, note },
+      card: { theme: input.card.theme, foil: input.card.foil, paper: input.card.paper, note, subtitle },
     },
   };
 }

@@ -48,12 +48,24 @@ export function isRevealed(mode: RevealMode, at: string | null, paid: boolean, n
   return false;
 }
 
-/** "Saturday, 19 December, 8pm" in Lagos time. */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st. */
+export function ordinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
+  return `${n}${suffix}`;
+}
+
+/** A Lagos calendar date (YYYY-MM-DD) as the card shows it: "12th of Dec, 2026". */
+export function formatCardDate(date: string, withYear = true): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return `${ordinal(d)} of ${MONTHS[m - 1]}${withYear ? `, ${y}` : ""}`;
+}
+
+/** "19th of Dec, 2026 at 8pm" in Lagos time. */
 export function formatEventDate(iso: string): string {
-  const d = new Date(iso);
-  const weekday = d.toLocaleDateString("en-GB", { timeZone: TIME_ZONE, weekday: "long" });
-  const day = d.toLocaleDateString("en-GB", { timeZone: TIME_ZONE, day: "numeric", month: "long" });
-  return `${weekday}, ${day}, ${formatTime(iso)}`;
+  return t("guest.card.date_at", { date: formatCardDate(lagosDate(iso)), time: formatTime(iso) });
 }
 
 /** The most days one event can span. */
@@ -84,27 +96,26 @@ function dateWords(date: string, opts: Intl.DateTimeFormatOptions): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-GB", { timeZone: "UTC", ...opts });
 }
 
-/** "Sat 12 Apr", for the day by day list. */
+/** "Sat, 12th of Apr", for the day by day editor. */
 export function formatDayLabel(date: string): string {
-  return dateWords(date, { weekday: "short", day: "numeric", month: "short" }).replace(",", "");
+  return `${dateWords(date, { weekday: "short" })}, ${formatCardDate(date, false)}`;
 }
 
 /**
- * When the event happens. One day: "Saturday, 19 December, 8pm".
- * Several days: "Saturday 12 to Wednesday 16 April, from 8pm", or across months
- * "Wednesday 30 April to Friday 2 May, from 8pm".
+ * When the event happens. One day: "19th of Dec, 2026 at 8pm".
+ * Several days: "12th to 16th of Apr, 2027, from 8pm", across months "30th of Apr to 2nd of May,
+ * 2027, from 8pm", and across years "30th of Dec, 2026 to 2nd of Jan, 2027, from 8pm".
  */
 export function formatEventWhen(startsAt: string, endDate: string | null): string {
   const dates = eventDates(startsAt, endDate);
   if (dates.length < 2) return formatEventDate(startsAt);
   const first = dates[0];
   const last = dates[dates.length - 1];
-  const sameMonth = first.slice(0, 7) === last.slice(0, 7);
-  const from = sameMonth
-    ? `${dateWords(first, { weekday: "long" })} ${dateWords(first, { day: "numeric" })}`
-    : dateWords(first, { weekday: "long", day: "numeric", month: "long" }).replace(",", "");
-  const to = dateWords(last, { weekday: "long", day: "numeric", month: "long" }).replace(",", "");
-  return t("guest.card.date_range", { from, to, time: formatTime(startsAt) });
+  const from =
+    first.slice(0, 7) === last.slice(0, 7)
+      ? ordinal(Number(first.slice(8, 10)))
+      : formatCardDate(first, first.slice(0, 4) !== last.slice(0, 4));
+  return t("guest.card.date_range", { from, to: formatCardDate(last), time: formatTime(startsAt) });
 }
 
 /** "8pm" or "8:30pm" in Lagos time. */
@@ -143,9 +154,9 @@ export function daysDiffer(days: DayView[], e: { name: string; dress_code: strin
   return days.some((d) => d.name !== e.name || d.dress !== e.dress_code);
 }
 
-/** "19 December" in Lagos time. */
+/** "17th of Dec, 2026" in Lagos time. */
 export function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { timeZone: TIME_ZONE, day: "numeric", month: "long" });
+  return formatCardDate(lagosDate(iso));
 }
 
 /** The words after "Revealed" on the card: "once you're in", "48 hours before", "on 17 December", or "soon". */

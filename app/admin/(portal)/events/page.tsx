@@ -5,6 +5,7 @@ import { listAdmins } from "@/lib/admins";
 import { requireSuperadmin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { formatEventWhen } from "@/lib/event";
+import { hostLoginUrl } from "@/lib/host-link";
 import { localPhone } from "@/lib/phone";
 import { listEvents } from "@/lib/settings";
 import { CreateEventButton, EventCard, type EventCardView } from "./EventsClient";
@@ -24,6 +25,7 @@ export default async function EventsPage() {
       name: e.name,
       when: e.starts_at ? formatEventWhen(e.starts_at, e.end_date) : t("admin.events.no_date"),
       current: e.id === me.eventId,
+      hostLink: hostLoginUrl(e.id),
       stats: {
         paid: s?.paid ?? 0,
         awaiting: s?.awaiting ?? 0,
