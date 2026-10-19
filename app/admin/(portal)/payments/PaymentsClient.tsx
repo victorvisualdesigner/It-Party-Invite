@@ -23,15 +23,19 @@ export type ClaimRow = {
   sender: string;
   claimedAt: string;
   duplicate: boolean;
+  /** For a part payment: what came before it and what is left after it. */
+  part: string | null;
 };
 
 function useConfirmedToast() {
   const toast = useToast();
   return (r: ConfirmResult) =>
-    toast(
-      t("admin.payments.confirmed_toast", { guest: r.guest }),
-      r.notifyHref ? { label: t("admin.payments.notify_guest", { guest: r.guest }), href: r.notifyHref } : undefined,
-    );
+    r.balance
+      ? toast(t("admin.payments.part_confirmed_toast", { guest: r.guest, balance: r.balance }))
+      : toast(
+          t("admin.payments.confirmed_toast", { guest: r.guest }),
+          r.notifyHref ? { label: t("admin.payments.notify_guest", { guest: r.guest }), href: r.notifyHref } : undefined,
+        );
 }
 
 /** Refreshes every 20 seconds and raises a browser notification for new claims while the tab is open. */
@@ -112,6 +116,7 @@ export function ClaimsList({ rows }: { rows: ClaimRow[] }) {
               <span>{t("admin.payments.confirm")}</span>
             </button>
           </div>
+          {c.part ? <p className="part">{c.part}</p> : null}
           {c.duplicate ? <p className="dup">{t("admin.payments.duplicate")}</p> : null}
         </section>
       ))}

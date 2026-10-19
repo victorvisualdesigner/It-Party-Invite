@@ -17,6 +17,7 @@ const base: EventInput = {
   hold_window_hours: "72",
   unopened_expiry_days: "7",
   invites_open: true,
+  installments: false,
   reveal_date_mode: "card",
   reveal_date_at: "",
   reveal_venue_mode: "at_time",

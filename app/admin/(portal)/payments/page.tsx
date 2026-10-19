@@ -24,6 +24,11 @@ export default async function PaymentsPage() {
     sender: c.payment.sender_name ?? "",
     claimedAt: c.payment.claimed_at ?? c.payment.created_at,
     duplicate: c.duplicate,
+    part: c.part
+      ? c.part.paidBefore
+        ? t("admin.payments.part_note", { paid: c.part.paidBefore, left: c.part.left })
+        : t("admin.payments.part_first", { left: c.part.left })
+      : null,
   }));
   return (
     <>

@@ -12,7 +12,7 @@ import type { AdminRow, SetupDelivery } from "@/lib/admins";
 import { callAction } from "@/lib/client-action";
 import { t } from "@/lib/copy";
 import { formatPhoneTyping } from "@/lib/phone-typing";
-import { addEventAdminAction, createEventAction, newLinkAction, openEventAction, removeAdminAction } from "./actions";
+import { addEventAdminAction, clearEventAction, createEventAction, newLinkAction, openEventAction, removeAdminAction } from "./actions";
 
 export type EventCardView = {
   id: number;
@@ -281,6 +281,51 @@ function AddAdminDialog({ event, onClose, onAdded }: { event: EventCardView; onC
   );
 }
 
+/* ---------- Clear an event's guests and payments ---------- */
+
+function normName(s: string) {
+  return s.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function ClearEventDialog({ event, onClose }: { event: EventCardView; onClose: () => void }) {
+  const toast = useToast();
+  const titleId = useId();
+  const [typed, setTyped] = useState("");
+  const [pending, startTransition] = useTransition();
+  const matches = !!normName(typed) && normName(typed) === normName(event.name);
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!matches || pending) return;
+    startTransition(async () => {
+      const result = await callAction(() => clearEventAction(event.id, typed));
+      if (result.ok) {
+        toast(t("admin.events.clear_done", { event: result.data.event, invites: result.data.invites, payments: result.data.payments }));
+        onClose();
+      } else toast(t("admin.common.error_network"));
+    });
+  }
+  return (
+    <Dialog labelledBy={titleId} onClose={onClose}>
+      <h2 id={titleId}>{t("admin.events.clear_title", { event: event.name })}</h2>
+      <p>{t("admin.events.clear_body", { event: event.name })}</p>
+      <form className="form" noValidate onSubmit={submit} style={{ marginTop: 12 }}>
+        <div className="field">
+          <label htmlFor={`clear-${event.id}`}>{t("admin.events.clear_type_label", { event: event.name })}</label>
+          <input className="input" id={`clear-${event.id}`} autoComplete="off" spellCheck={false} value={typed} onChange={(e) => setTyped(e.target.value)} />
+        </div>
+        <div className="actions">
+          <button className="btn btn-ghost btn-sm" type="button" onClick={onClose}>
+            {t("admin.members.cancel")}
+          </button>
+          <button className="btn btn-danger btn-sm" type="submit" disabled={!matches || pending} aria-busy={pending}>
+            {pending ? t("admin.common.saving") : t("admin.events.clear_ok")}
+          </button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
 function Busy({ label, icon, className, run }: { label: string; icon?: "key" | "chev"; className: string; run: () => Promise<void> }) {
   const [pending, startTransition] = useTransition();
   return (
@@ -297,6 +342,7 @@ export function EventCard({ event }: { event: EventCardView }) {
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<EventCardView["admins"][number] | null>(null);
   const [delivery, setDelivery] = useState<SetupDelivery | null>(null);
+  const [clearing, setClearing] = useState(false);
   const stat = (key: keyof EventCardView["stats"]) => (
     <div>
       <dt>{t(`admin.events.stats.${key}` as never)}</dt>
@@ -399,6 +445,13 @@ export function EventCard({ event }: { event: EventCardView }) {
           </div>
         </div>
       </section>
+      <footer className="ev-foot">
+        <button className="btn btn-danger btn-sm" type="button" onClick={() => setClearing(true)}>
+          <Icon name="x" />
+          <span>{t("admin.events.clear")}</span>
+        </button>
+      </footer>
+      {clearing ? <ClearEventDialog event={event} onClose={() => setClearing(false)} /> : null}
       {adding ? (
         <AddAdminDialog
           event={event}

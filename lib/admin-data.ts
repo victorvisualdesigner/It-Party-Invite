@@ -9,6 +9,7 @@ import { cardReadyMessage, revealMessage } from "@/lib/messages";
 import { formatNaira } from "@/lib/money";
 import { listTeam, type TeamRow } from "@/lib/people";
 import { maskPhone } from "@/lib/phone";
+import { getEvent } from "@/lib/settings";
 import { SLOT_STATUSES, type Invite, type Payment, type Role } from "@/lib/types";
 import { waLink } from "@/lib/whatsapp";
 
@@ -35,7 +36,7 @@ export type Activity = { id: string; action: string; line: string; at: string };
 const ACTIVITY_KEYS = new Set([
   "sent", "opened", "said_yes", "claimed", "confirmed", "not_found", "expired", "cancelled", "resent",
   "reset_access", "wrong_attempt", "checked_in", "member_added", "member_removed", "event_updated", "account_switched",
-  "asked_inviter", "let_in_free",
+  "asked_inviter", "let_in_free", "part_paid",
 ]);
 
 export type Overview = {
@@ -113,6 +114,8 @@ export type GuestRow = {
   asked: boolean;
   /** The inviter is a host, so an admin can let this guest in free. */
   canFree: boolean;
+  /** Pay small small: "₦20,000 of ₦50,000 paid", while some of the price is still to come. */
+  partPaid: string | null;
   notifyHref: string | null;
   revealHref: string | null;
 };
@@ -124,6 +127,7 @@ export async function guestRows(eventId: number): Promise<GuestRow[]> {
     db().from("people").select("id, role").or(`event_id.eq.${eventId},event_id.is.null`),
   ]);
   const roleOf = new Map((roles ?? []).map((p) => [p.id as string, p.role as Role]));
+  const price = (await getEvent(eventId)).price_kobo;
   const { data: payments } = await db()
     .from("payments")
     .select("invite_id, reference, status, amount_kobo, payer_type, created_at")
@@ -131,7 +135,9 @@ export async function guestRows(eventId: number): Promise<GuestRow[]> {
     .neq("status", "void")
     .order("created_at", { ascending: false });
   const latest = new Map<string, NonNullable<GuestRow["payment"]>>();
+  const confirmedSum = new Map<string, number>();
   for (const p of payments ?? []) {
+    if (p.status === "confirmed") confirmedSum.set(p.invite_id as string, (confirmedSum.get(p.invite_id as string) ?? 0) + (p.amount_kobo as number));
     const current = latest.get(p.invite_id as string);
     if (current && current.status === "confirmed") continue;
     if (!current || p.status === "confirmed") {
@@ -162,6 +168,10 @@ export async function guestRows(eventId: number): Promise<GuestRow[]> {
       payment: latest.get(i.id) ?? null,
       asked: isAskingInviter(i),
       canFree: canLetInFree(i, roleOf.get(i.inviter_id) ?? null),
+      partPaid:
+        !paid && (confirmedSum.get(i.id) ?? 0) > 0
+          ? t("admin.guests.part_paid", { paid: formatNaira(confirmedSum.get(i.id) ?? 0), price: formatNaira(price) })
+          : null,
       notifyHref: paid ? waLink(i.guest_phone_e164, cardReadyMessage(i.guest_first_name, link)) : null,
       revealHref: paid ? waLink(i.guest_phone_e164, revealMessage(i.guest_first_name, link)) : null,
     };

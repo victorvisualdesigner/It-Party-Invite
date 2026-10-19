@@ -154,7 +154,7 @@
       if (s.screen === "card" && opts.reveal) revealCard();
       if (s.screen === "ticket") { fitName(); flipTicket(!!opts.flip); }
       // Coming back to a saved seat: the transfer details come straight up.
-      if (s.screen === "held" && (opts.arrive || opts.reveal) && s.payment) openSheet(s.payment, false);
+      if (s.screen === "held" && (opts.arrive || opts.reveal)) continueToPay($("#held-pay"));
     });
   }
 
@@ -206,8 +206,15 @@
       var to = $("#env-wait .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest });
     },
     held: function (s) {
-      var ends = holdEnds(s);
-      $("#held-body").textContent = ends ? t("guest.held.body", { expires_at: fmtShort(ends) }) : t("guest.transfer.not_now_note", { expires_at: "" });
+      var ends = holdEnds(s), parts = s.parts;
+      if (parts && parts.paid) {
+        // Part paid: what is in, what is left. The seat has no deadline now.
+        $("#held-title").textContent = t("guest.held.part_title", { paid: parts.paid });
+        $("#held-body").textContent = t("guest.held.part_body", { balance: parts.balance });
+      } else {
+        $("#held-title").textContent = t("guest.held.title");
+        $("#held-body").textContent = ends ? t("guest.held.body", { expires_at: fmtShort(ends) }) : t("guest.transfer.not_now_note", { expires_at: "" });
+      }
       var to = $("#env-held .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest });
     },
     asked: function (s) {
@@ -644,8 +651,10 @@
   }
   function openSheet(p, atSentStep) {
     sheetPayment = p;
+    var parts = state && state.parts;
     $("#rows").innerHTML =
-      rowHTML(t("guest.transfer.amount_label"), p.amount, p.amount_digits, t("guest.transfer.amount_label")) +
+      (parts && parts.paid ? rowHTML(t("guest.transfer.paid_so_far_label"), parts.paid, null, "", "so-far") : "") +
+      rowHTML(t("guest.transfer.amount_label"), p.amount, p.amount_digits, t("guest.transfer.amount_label"), "amt") +
       rowHTML(t("guest.transfer.bank_label"), p.bank) +
       rowHTML(t("guest.transfer.account_number_label"), p.account_number_display, p.account_number, t("guest.transfer.account_number_label")) +
       rowHTML(t("guest.transfer.account_name_label"), p.account_name) +
@@ -654,6 +663,7 @@
     if (p.sender_name) $("#sender").value = p.sender_name;
     $("#btn-ask").textContent = t("guest.transfer.ask_inviter", { inviter: (state && state.inviter) || "" });
     $("#sheet-error").hidden = true;
+    setupParts(p);
     sheetOpen = true; sheet.hidden = false;
     renderHold(); clearInterval(holdT); holdT = setInterval(renderHold, 30000);
     setSentStep(atSentStep ? 1 : 0);
@@ -691,6 +701,7 @@
   });
   var claiming = false;
   $("#btn-sent").addEventListener("click", async function () {
+    if (partMode && partAmount() == null) { partError(); return; }
     if (sentStep === 0) { setSentStep(1); return; }
     if (claiming || asking) return;
     var name = $("#sender").value.trim();
@@ -698,11 +709,14 @@
     $("#sender").removeAttribute("aria-invalid");
     claiming = true; working($("#btn-sent"), true);
     var r;
-    try { r = await api("claim", { sender_name: name }); } catch (e) {
+    var body = { sender_name: name };
+    if (partMode) body.amount = String(partAmount());
+    try { r = await api("claim", body); } catch (e) {
       claiming = false; working($("#btn-sent"), false);
       $("#sheet-error").textContent = t("guest.network"); $("#sheet-error").hidden = false; return;
     }
     claiming = false; working($("#btn-sent"), false);
+    if (r && r.error === "amount") { if (r.state) state = r.state; setupParts(sheetPayment, true); partError(); return; }
     await closeSheet();
     route(r.state);
   });
@@ -736,7 +750,68 @@
   });
   $("#scrim").addEventListener("click", leaveSheet);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && sheetOpen) leaveSheet(); });
-  $("#held-pay").addEventListener("click", function () { if (state && state.payment) openSheet(state.payment, false); });
+  $("#held-pay").addEventListener("click", function () { continueToPay(this); });
+  // Back to paying: the open transfer if there is one, or a fresh one for what is left after a part payment.
+  var continuing = false;
+  async function continueToPay(btn) {
+    if (state && state.payment && state.payment.status === "open") { openSheet(state.payment, false); return; }
+    if (continuing) return;
+    continuing = true; working(btn, true);
+    var r;
+    try { r = await api("yes", {}); } catch (e) { continuing = false; working(btn, false); toast(t("guest.network")); return; }
+    continuing = false; working(btn, false);
+    if (r.state) state = r.state;
+    if (r.kind === "payment") openSheet(r.payment, false);
+    else if (r.kind === "no_account") toast(t("guest.transfer.no_account"));
+    else if (r.state) route(r.state);
+  }
+
+  /* ---------- Pay small small ---------- */
+  var partMode = false;
+  function groupDigits(d) { return String(d).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  function partAmount() {
+    var parts = state && state.parts, n = Number(($("#part-amount").value || "").replace(/\D/g, ""));
+    if (!parts || !n) return null;
+    return n >= Number(parts.min_digits) && n <= Number(parts.balance_digits) ? n : null;
+  }
+  function partError() {
+    var parts = state.parts, el = $("#part-error");
+    el.textContent = t("guest.transfer.part_error", { min: parts.min, balance: parts.balance }); el.hidden = false;
+    $("#part-amount").setAttribute("aria-invalid", "true"); $("#part-amount").focus();
+  }
+  // The Amount row shows what the guest is sending now, and its Copy button copies those digits.
+  function showAmount(text, digits) {
+    var row = $("#rows .amt"); if (!row) return;
+    row.querySelector(".v").textContent = text;
+    var b = row.querySelector(".copy"); if (b) b.setAttribute("data-copy", digits);
+  }
+  function setPartMode(on) {
+    partMode = on;
+    $("#part-step").hidden = !on;
+    $("#part-toggle").textContent = on ? t("guest.transfer.part_full") : t("guest.transfer.part_toggle");
+    $("#part-toggle").setAttribute("aria-expanded", on ? "true" : "false");
+    $("#part-error").hidden = true; $("#part-amount").removeAttribute("aria-invalid");
+    var n = on ? partAmount() : null;
+    if (n) showAmount("₦" + groupDigits(n), String(n));
+    else if (sheetPayment) showAmount(sheetPayment.amount, sheetPayment.amount_digits);
+    if (on) setTimeout(function () { $("#part-amount").focus(); }, 60);
+  }
+  function setupParts(p, keep) {
+    var parts = state && state.parts;
+    $("#parts").hidden = !parts;
+    if (!parts) { partMode = false; return; }
+    $("#part-help").textContent = t("guest.transfer.part_help", { min: parts.min, balance: parts.balance });
+    if (!keep) { $("#part-amount").value = ""; setPartMode(false); }
+  }
+  $("#part-toggle").addEventListener("click", function () { setPartMode(!partMode); });
+  $("#part-amount").addEventListener("input", function () {
+    var el = this, d = el.value.replace(/\D/g, "").slice(0, 9);
+    el.value = d ? groupDigits(d) : "";
+    $("#part-error").hidden = true; el.removeAttribute("aria-invalid");
+    var n = partAmount();
+    if (n) showAmount("₦" + groupDigits(n), String(n));
+    else if (sheetPayment) showAmount(sheetPayment.amount, sheetPayment.amount_digits);
+  });
 
   /* ---------- Not found and covered ---------- */
   $("#nf-retry").addEventListener("click", async function () {

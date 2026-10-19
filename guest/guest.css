@@ -116,6 +116,11 @@ body {
 .sheet .field { margin-bottom: 14px; }
 .sheet-actions { display: grid; gap: 10px; }
 .sheet-actions .btn { min-height: 54px; }
+/* Pay small small: a quiet text button that opens the amount field. */
+.parts { display: grid; gap: 10px; margin-top: 12px; }
+.link-btn { justify-self: start; padding: 6px 0; border: 0; background: none; color: var(--gold-300); font: inherit; font-size: 15px; font-weight: var(--weight-ui-strong); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.parts .input { font-size: 18px; }
+.rows .so-far .v { color: var(--gold-300); }
 /* Buttons that carry a name can wrap on a narrow phone instead of running off the edge. */
 #btn-ask, #asked-wa { white-space: normal; text-align: center; line-height: 1.25; padding-block: 10px; }
 
@@ -209,3 +214,27 @@ body {
 #s-stranger .envelope, #s-claimed .envelope, #s-ended .envelope { animation: guest-float 6.5s ease-in-out infinite; }
 @keyframes guest-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
 @media (prefers-reduced-motion: reduce) { #s-stranger .envelope, #s-claimed .envelope, #s-ended .envelope { animation: none; } }
+
+/* The card while it waits for an answer: it breathes, a band of light crosses the paper now and
+   then, the corners catch the light in turn and the diamond above the question pulses. Transform
+   and opacity only, and every loop starts after the card has slid in. */
+#s-card .invite { animation: card-breathe 7s ease-in-out 1.6s infinite; }
+@keyframes card-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.card-shine { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 1; }
+.card-shine::before {
+  content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 38%;
+  background: linear-gradient(100deg, transparent 0%, rgba(200, 162, 74, 0.07) 32%, rgba(232, 209, 147, 0.3) 46%, rgba(255, 255, 255, 0.55) 50%, rgba(232, 209, 147, 0.3) 54%, rgba(200, 162, 74, 0.07) 68%, transparent 100%);
+  transform: translateX(-160%) skewX(-16deg); animation: card-shine 8s ease-in-out 2.2s infinite;
+}
+@keyframes card-shine { 0% { transform: translateX(-160%) skewX(-16deg); } 24%, 100% { transform: translateX(360%) skewX(-16deg); } }
+#s-card .corner { animation: corner-glint 8s ease-in-out 2.2s infinite; }
+#s-card .corner.tr { animation-delay: 2.6s; }
+#s-card .corner.br { animation-delay: 3s; }
+#s-card .corner.bl { animation-delay: 3.4s; }
+@keyframes corner-glint { 0%, 30%, 100% { opacity: 0.75; } 12% { opacity: 1; } }
+#s-card .question .orn { animation: orn-pulse 3.2s ease-in-out 1.6s infinite; }
+@keyframes orn-pulse { 0%, 100% { transform: translateX(-50%) rotate(45deg) scale(1); } 50% { transform: translateX(-50%) rotate(45deg) scale(1.3); } }
+@media (prefers-reduced-motion: reduce) {
+  #s-card .invite, .card-shine::before, #s-card .corner, #s-card .question .orn { animation: none; }
+  .card-shine { display: none; }
+}

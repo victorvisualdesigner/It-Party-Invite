@@ -33,6 +33,7 @@ export default async function EventPage() {
     hold_window_hours: String(event.hold_window_hours),
     unopened_expiry_days: String(event.unopened_expiry_days),
     invites_open: event.invites_open,
+    installments: event.installments,
     reveal_date_mode: event.reveal_date_mode,
     reveal_date_at: lagosLocal(event.reveal_date_at),
     reveal_venue_mode: event.reveal_venue_mode,

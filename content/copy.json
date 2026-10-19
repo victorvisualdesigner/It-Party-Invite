@@ -84,7 +84,14 @@
       "sender_name_error": "Add the name on the account you sent from.",
       "mid_payment_note": "These details are yours until you pay, even if the hosts change accounts.",
       "no_account": "The transfer details are almost ready. Check back in a little while.",
-      "ask_inviter": "{inviter} is paying for me"
+      "ask_inviter": "{inviter} is paying for me",
+      "part_toggle": "Pay small small",
+      "part_full": "Pay it all at once",
+      "part_label": "How much are you sending now?",
+      "part_help": "At least {min}. Up to {balance}.",
+      "part_error": "Enter an amount from {min} to {balance}.",
+      "paid_so_far_label": "Paid so far",
+      "balance_label": "Left to pay"
     },
     "awaiting": {
       "title": "Your card is being pressed",
@@ -98,7 +105,9 @@
       "_about": "After the guest taps I'll pay later, and whenever they come back before paying. Opening the page brings the transfer details straight up.",
       "title": "Your seat is saved",
       "body": "We're holding it for you until {expires_at}. Pay any time before then through this same link.",
-      "pay": "Continue to pay"
+      "pay": "Continue to pay",
+      "part_title": "{paid} received",
+      "part_body": "{balance} left to pay. Your seat stays yours, so send the rest whenever you're ready."
     },
     "asked": {
       "_about": "After the guest taps {inviter} is paying for me on the transfer sheet. The app does not message the inviter: the guest sends the WhatsApp line.",
@@ -405,7 +414,10 @@
       "paid_by_guest": "Guest",
       "confirm_note": "Confirm only after you see it in the bank app.",
       "match_confirm": "Confirm payment",
-      "match_empty": "No open invites match that."
+      "match_empty": "No open invites match that.",
+      "part_note": "Part payment. {paid} paid before this, {left} left after it.",
+      "part_first": "Part payment. {left} left after it.",
+      "part_confirmed_toast": "Confirmed. {guest} has {balance} left to pay."
     },
     "members": {
       "title": "Members",
@@ -465,6 +477,8 @@
       "refund_label": "Refund rule",
       "refund_default": "All payments are final. No refunds.",
       "invites_open_label": "Invites are open",
+      "installments_label": "Let guests pay small small",
+      "installments_help": "Guests can send the price in parts. Their seat stays held after the first part, and their card unlocks once the full amount is confirmed.",
       "reveal_title": "Reveal controls",
       "reveal_date": "Show the date",
       "reveal_venue": "Show the venue",
@@ -616,7 +630,8 @@
       "asked": "Asked inviter to pay",
       "let_in_free_title": "Let {guest} in free",
       "let_in_free_body": "{guest} asked {inviter} to pay. As a host, {inviter} can let them in without a transfer, and their card unlocks right away.",
-      "let_in_free_done": "{guest} is in, free of charge."
+      "let_in_free_done": "{guest} is in, free of charge.",
+      "part_paid": "{paid} of {price} paid"
     },
     "invite": {
       "subtitle": "Your own invites. You have Unlimited."
@@ -642,6 +657,7 @@
       "account_switched": "Payout account switched",
       "asked_inviter": "{guest} asked {inviter} to pay",
       "let_in_free": "{guest} was let in free",
+      "part_paid": "{guest} paid part of their seat",
       "empty": "Nothing yet. The first envelope will show up here."
     },
     "admins": {
@@ -711,6 +727,12 @@
       "host_link_label": "Admin sign in link",
       "host_link_help": "This event's admins sign in here. Open it in a private window to see exactly what they see.",
       "host_link_open": "Open",
+      "clear": "Clear event data",
+      "clear_title": "Clear {event}?",
+      "clear_body": "This deletes every invite, guest, payment and activity line in {event}. Members, admins, payout accounts and settings stay. You can't undo it.",
+      "clear_type_label": "Type {event} to confirm",
+      "clear_ok": "Clear everything",
+      "clear_done": "{event} is cleared. {invites} invites and {payments} payments were deleted.",
       "totals": "All events together",
       "stats": {
         "paid": "Paid",

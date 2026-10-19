@@ -8,7 +8,7 @@ import { addAdmin, newSetupLink, removeAdmin, type SetupDelivery } from "@/lib/a
 import { EVENT_COOKIE, getAdmin, type Admin } from "@/lib/auth";
 import { t } from "@/lib/copy";
 import { parseAdminInput, parseCreateEvent, type AdminInput, type CreateEventInput } from "@/lib/schemas";
-import { createEvent, getEvent, MIGRATION_HINT } from "@/lib/settings";
+import { clearEventData, confirmsEventName, createEvent, getEvent, MIGRATION_HINT } from "@/lib/settings";
 
 const personId = z.uuid();
 const eventId = z.number().int().positive();
@@ -110,4 +110,17 @@ export async function removeAdminAction(id: string): Promise<ActionResult<{ firs
   const name = await removeAdmin(pid.data, admin.id);
   revalidatePath("/admin/events");
   return name ? { ok: true, data: { firstName: name } } : { ok: false };
+}
+
+/** Deletes an event's invites, payments and activity. Only when the super admin types its name. */
+export async function clearEventAction(id: number, typedName: string): Promise<ActionResult<{ event: string; invites: number; payments: number }>> {
+  const admin = await superadmin();
+  if ("ok" in admin) return admin;
+  const eid = eventId.safeParse(id);
+  if (!eid.success) return { ok: false };
+  const event = await getEvent(eid.data);
+  if (!confirmsEventName(String(typedName ?? ""), event.name)) return { ok: false };
+  const result = await clearEventData(event.id, admin.id);
+  revalidatePath("/admin", "layout");
+  return { ok: true, data: { event: event.name, ...result } };
 }

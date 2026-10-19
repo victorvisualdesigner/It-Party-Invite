@@ -112,6 +112,7 @@ tbody tr:hover { background: rgba(243, 236, 223, 0.55); }
 .num-cell { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .taps-cell b { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
 .pay-cell small { display: block; color: var(--fg-quiet); font-size: 12px; }
+.pay-cell .part-paid { color: var(--gold-700); font-weight: var(--weight-ui-strong); }
 .ref { font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.08em; font-weight: 600; color: var(--gold-700); }
 .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .empty-row { padding: 48px 18px; text-align: center; color: var(--fg-quiet); }
@@ -127,6 +128,7 @@ tbody tr:hover { background: rgba(243, 236, 223, 0.55); }
 .claim .ref { font-size: 17px; }
 .claim .acts { display: flex; gap: 8px; }
 .claim .dup { grid-column: 1 / -1; margin: -4px 0 0; font-size: 13px; color: var(--seal-600); }
+.claim .part { grid-column: 1 / -1; margin: -4px 0 0; font-size: 13px; color: var(--gold-700); }
 .empty-state { display: grid; justify-items: center; gap: 14px; padding: 56px 24px; text-align: center; color: var(--fg-quiet); }
 .empty-state .seal-mini { width: 64px; height: 64px; }
 .empty-state .seal-mini b { font-size: 32px; }
@@ -438,6 +440,7 @@ html:has(.admin-root) { background-color: var(--cream-50); }
 .ev-host-link { display: grid; gap: 6px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .ev-host-link .link-box { margin: 2px 0 0; }
 .ev-host-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.ev-foot { display: flex; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--line); }
 .ev-admins ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .ev-admins li { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; }
 .ev-admins li .admin-acts { grid-column: 1 / -1; justify-content: flex-start; }

@@ -147,6 +147,7 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
                         ) : (
                           <span className="quiet">{t("admin.guests.unpaid")}</span>
                         )}
+                        {r.partPaid ? <small className="part-paid">{r.partPaid}</small> : null}
                       </td>
                       <td className="num-cell quiet">{timeAgo(r.sentAt)}</td>
                       <td>

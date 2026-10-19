@@ -441,6 +441,13 @@ export function EventForm({ initial, hostName }: { initial: EventInput; hostName
           <Field id="e-refund" label={t("admin.event.refund_label")}>
             <textarea className="input" id="e-refund" rows={2} {...text("refund_text")} />
           </Field>
+          <label className="switch" htmlFor="e-parts">
+            <span>
+              <b style={{ fontWeight: 600 }}>{t("admin.event.installments_label")}</b>
+              <small>{t("admin.event.installments_help")}</small>
+            </span>
+            <input type="checkbox" id="e-parts" checked={v.installments} onChange={(e) => set("installments", e.target.checked)} />
+          </label>
         </section>
 
         <section className="card fieldset" aria-labelledby="sec-rules">

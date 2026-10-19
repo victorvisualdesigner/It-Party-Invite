@@ -78,6 +78,8 @@ export type EventRow = {
   reveal_venue_mode: RevealMode;
   reveal_venue_at: string | null;
   invites_open: boolean;
+  /** Pay small small: guests may send the price in parts. */
+  installments: boolean;
   reference_prefix: string;
   card: CardDesign;
   created_at?: string;

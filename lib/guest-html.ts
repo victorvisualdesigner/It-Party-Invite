@@ -180,6 +180,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 
 <section class="screen" id="s-card" hidden aria-labelledby="card-headline">
   <article class="invite" id="invite">
+    <span class="card-shine" aria-hidden="true"></span>
     ${corner("tl")}${corner("tr")}${corner("bl")}${corner("br")}
     <p class="card-eyebrow" id="card-event"></p>
     <p class="card-sub" id="card-sub" hidden></p>
@@ -289,6 +290,15 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
     </div>
     <p class="intro">${esc(t("guest.transfer.intro"))}</p>
     <div class="rows" id="rows"></div>
+    <div class="parts" id="parts" hidden>
+      <button class="link-btn" type="button" id="part-toggle" aria-expanded="false" aria-controls="part-step"></button>
+      <div class="field" id="part-step" hidden>
+        <label for="part-amount">${esc(t("guest.transfer.part_label"))}</label>
+        <div class="input-affix"><span class="affix" aria-hidden="true">₦</span><input class="input num" id="part-amount" type="text" inputmode="numeric" autocomplete="off" aria-describedby="part-help"></div>
+        <span class="help" id="part-help"></span>
+        <p class="error" id="part-error" role="alert" hidden></p>
+      </div>
+    </div>
     <p class="note" id="hold-line"></p>
     <p class="refund" id="refund"></p>
     <div id="sent-step" hidden>

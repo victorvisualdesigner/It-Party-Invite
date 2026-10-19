@@ -8,10 +8,11 @@ import { db } from "@/lib/db";
 import { appUrl } from "@/lib/env";
 import { daysDiffer, eventDays, formatEventWhen, isRevealed, revealHint } from "@/lib/event";
 import { pausedClock, refreshExpiry } from "@/lib/invites";
+import { balanceKobo, partBounds } from "@/lib/installments";
 import { verifyKey } from "@/lib/keys";
 import { askInviterMessage } from "@/lib/messages";
-import { formatNaira } from "@/lib/money";
-import { liveGuestPayment, liveMemberPayment, openGuestPayment, paidByCover, paymentView, type PaymentView } from "@/lib/payments";
+import { formatNaira, nairaDigits } from "@/lib/money";
+import { liveGuestPayment, liveMemberPayment, openGuestPayment, paidByCover, paidSoFar, paymentView, type PaymentView } from "@/lib/payments";
 import { maskPhone, normalizePhone } from "@/lib/phone";
 import { getEvent } from "@/lib/settings";
 import { addInviteDevice } from "@/lib/session";
@@ -68,9 +69,26 @@ export type GuestView =
       by_member: boolean;
       /** On the asked screen only: opens WhatsApp to the inviter with a line from the library. */
       ask_href: string | null;
+      /** Pay small small, when the event allows it and the guest has not paid in full. */
+      parts: PartsView | null;
       ticket_code: string | null;
       qr: string | null;
     });
+
+/** What a guest paying in parts sees: what is in, what is left, and the smallest part they can send. */
+export type PartsView = { paid: string | null; balance: string; balance_digits: string; min: string; min_digits: string };
+
+export function partsView(priceKobo: number, paidKobo: number): PartsView {
+  const balance = balanceKobo(priceKobo, paidKobo);
+  const { min } = partBounds(balance);
+  return {
+    paid: paidKobo > 0 ? formatNaira(paidKobo) : null,
+    balance: formatNaira(balance),
+    balance_digits: nairaDigits(balance),
+    min: formatNaira(min),
+    min_digits: nairaDigits(min),
+  };
+}
 
 export function eventView(e: EventRow, paid: boolean): EventView {
   const dateShown = isRevealed(e.reveal_date_mode, e.reveal_date_at, paid) && !!e.starts_at;
@@ -143,6 +161,7 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
     payment: null as PaymentView | null,
     by_member: false,
     ask_href: null as string | null,
+    parts: null as PartsView | null,
     ticket_code: paid ? inv.ticket_code : null,
     qr: paid && inv.ticket_code ? await ticketQrSvg(inv.ticket_code) : null,
   };
@@ -151,6 +170,8 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
 
   const p = await liveGuestPayment(inv.id);
   if (p) base.payment = await paymentView(p);
+  const paidKobo = event.installments && !inv.covered ? await paidSoFar(inv.id) : 0;
+  if (event.installments && !inv.covered && event.price_kobo > 0) base.parts = partsView(event.price_kobo, paidKobo);
   // Their inviter sent a transfer for them and the host is checking it: no account details, just wait.
   const mp = await liveMemberPayment(inv.id);
   if (mp?.status === "claimed" && inv.yes_at && p?.status !== "claimed") return { screen: "wait", ...base, by_member: true };
@@ -159,7 +180,7 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
   if (isAskingInviter(inv)) return { screen: "asked", ...base, ask_href: askHref(inv, inviter) };
   if (inv.status === "said_yes" && p?.status === "not_found") return { screen: "notfound", ...base };
   // Said Yes and has transfer details but hasn't paid: their seat is saved, and the page opens on paying.
-  if (inv.status === "said_yes" && p?.status === "open") return { screen: "held", ...base };
+  if (inv.status === "said_yes" && (p?.status === "open" || paidKobo > 0)) return { screen: "held", ...base };
   return { screen: "card", ...base };
 }
 

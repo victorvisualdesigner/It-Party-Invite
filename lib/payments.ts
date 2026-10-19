@@ -5,6 +5,7 @@ import { randomInt } from "node:crypto";
 import { ASK_STATUSES, canLetInFree } from "@/lib/ask-inviter";
 import { audit } from "@/lib/audit";
 import { db, isUniqueViolation } from "@/lib/db";
+import { balanceKobo, isFullyPaid, parsePartAmount } from "@/lib/installments";
 import { groupAccountNumber } from "@/lib/event";
 import { getInvite, inviteLink, pausedClock, resumedClock } from "@/lib/invites";
 import { cardReadyMessage } from "@/lib/messages";
@@ -63,6 +64,12 @@ export async function liveGuestPayment(inviteId: string): Promise<Payment | null
   return (data as Payment | null) ?? null;
 }
 
+/** Every confirmed payment for this invite added up, in kobo: the parts a guest has paid, or a whole payment. */
+export async function paidSoFar(inviteId: string): Promise<number> {
+  const { data } = await db().from("payments").select("amount_kobo").eq("invite_id", inviteId).eq("status", "confirmed");
+  return (data ?? []).reduce((sum, p) => sum + (p.amount_kobo as number), 0);
+}
+
 /**
  * The guest's open payment, made on first Yes. The amount and account are copied now and never
  * change, even if the admin switches accounts. Returns null when no payout account exists yet.
@@ -71,6 +78,9 @@ export async function openGuestPayment(inv: Invite): Promise<Payment | null> {
   const existing = await liveGuestPayment(inv.id);
   if (existing) return existing;
   const event = await getEvent(inv.event_id);
+  // After a part payment, the next transfer asks only for what is left.
+  const due = balanceKobo(event.price_kobo, await paidSoFar(inv.id));
+  if (due <= 0) return null;
   const { data: account } = await db().from("payout_accounts").select("id").eq("event_id", inv.event_id).eq("active", true).maybeSingle();
   if (!account) return null;
   for (let attempt = 0; attempt < 30; attempt++) {
@@ -81,7 +91,7 @@ export async function openGuestPayment(inv: Invite): Promise<Payment | null> {
         invite_id: inv.id,
         payer_type: "guest",
         reference: newReference(event.reference_prefix),
-        amount_kobo: event.price_kobo,
+        amount_kobo: due,
         account_id: account.id,
         status: "open",
       })
@@ -121,6 +131,9 @@ export async function openMemberPayment(inv: Invite, payerId: string): Promise<P
   const existing = await liveMemberPayment(inv.id);
   if (existing && existing.status !== "confirmed") return existing;
   const event = await getEvent(inv.event_id);
+  // The inviter covers whatever the guest has not paid yet.
+  const due = balanceKobo(event.price_kobo, await paidSoFar(inv.id));
+  if (due <= 0) return null;
   const { data: account } = await db().from("payout_accounts").select("id").eq("event_id", inv.event_id).eq("active", true).maybeSingle();
   if (!account) return null;
   for (let attempt = 0; attempt < 30; attempt++) {
@@ -132,7 +145,7 @@ export async function openMemberPayment(inv: Invite, payerId: string): Promise<P
         payer_type: "member",
         payer_person_id: payerId,
         reference: newReference(event.reference_prefix),
-        amount_kobo: event.price_kobo,
+        amount_kobo: due,
         account_id: account.id,
         status: "open",
       })
@@ -191,25 +204,39 @@ async function markPaid(inv: Pick<Invite, "id" | "event_id">, extra: Record<stri
   return null;
 }
 
-/** Guest tapped I've sent it. The clock pauses while the admin checks. */
-export async function claimGuestPayment(inv: Invite, senderName: string): Promise<boolean> {
+export type ClaimOutcome = "claimed" | "amount" | "failed";
+
+/**
+ * Guest tapped I've sent it. The clock pauses while the admin checks. When the event allows pay
+ * small small, `part` is the amount in naira the guest says they sent; it must fit what is left.
+ */
+export async function claimGuestPayment(inv: Invite, senderName: string, part?: unknown): Promise<ClaimOutcome> {
   const p = await liveGuestPayment(inv.id);
-  if (!p) return false;
+  if (!p) return "failed";
+  const changes: Record<string, unknown> = { status: "claimed", sender_name: senderName, claimed_at: new Date().toISOString(), resolved_at: null, resolved_by: null };
+  if (part != null && part !== "") {
+    const event = await getEvent(inv.event_id);
+    if (event.installments) {
+      const amount = parsePartAmount(part, balanceKobo(event.price_kobo, await paidSoFar(inv.id)));
+      if (amount == null) return "amount";
+      changes.amount_kobo = amount;
+    }
+  }
   const { data } = await db()
     .from("payments")
-    .update({ status: "claimed", sender_name: senderName, claimed_at: new Date().toISOString(), resolved_at: null, resolved_by: null })
+    .update(changes)
     .eq("id", p.id)
     .in("status", ["open", "not_found", "claimed"])
     .select("id")
     .maybeSingle();
-  if (!data) return false;
+  if (!data) return "failed";
   await db()
     .from("invites")
     .update({ status: "awaiting_confirmation", ...pausedClock(inv) })
     .eq("id", inv.id)
     .in("status", ["said_yes", "awaiting_confirmation"]);
-  await audit("guest", null, "claimed", { reference: p.reference }, inv.id);
-  return true;
+  await audit("guest", null, "claimed", { reference: p.reference, amount_kobo: changes.amount_kobo ?? p.amount_kobo }, inv.id);
+  return "claimed";
 }
 
 /** Guest tapped Yes on an invite someone already paid for: straight to the card. */
@@ -228,6 +255,8 @@ export type Claim = {
   payerName: string;
   amount: string;
   duplicate: boolean;
+  /** A part payment: what was confirmed before this one, and what is left after it. Null for a whole payment. */
+  part: { paidBefore: string | null; left: string } | null;
 };
 
 export async function listClaims(eventId: number): Promise<Claim[]> {
@@ -237,14 +266,20 @@ export async function listClaims(eventId: number): Promise<Claim[]> {
   const inviteIds = [...new Set(payments.map((p) => p.invite_id))];
   const [{ data: invites }, { data: siblings }] = await Promise.all([
     db().from("invites").select("*").in("id", inviteIds),
-    db().from("payments").select("invite_id, status").in("invite_id", inviteIds).in("status", ["claimed", "confirmed"]),
+    db().from("payments").select("invite_id, status, amount_kobo").in("invite_id", inviteIds).in("status", ["claimed", "confirmed"]),
   ]);
+  const price = (await getEvent(eventId)).price_kobo;
   const inviterIds = [...new Set((invites ?? []).map((i) => i.inviter_id as string))];
   const { data: people } = await db().from("people").select("id, first_name").in("id", inviterIds);
   const nameOf = new Map((people ?? []).map((p) => [p.id as string, p.first_name as string]));
   const byId = new Map((invites ?? []).map((i) => [i.id as string, i as Invite]));
-  const count = new Map<string, number>();
-  for (const s of siblings ?? []) count.set(s.invite_id, (count.get(s.invite_id) ?? 0) + 1);
+  // Two payments only clash when, together with what is confirmed, they come to more than the price.
+  const owed = new Map<string, number>();
+  const confirmed = new Map<string, number>();
+  for (const s of siblings ?? []) {
+    owed.set(s.invite_id, (owed.get(s.invite_id) ?? 0) + (s.amount_kobo as number));
+    if (s.status === "confirmed") confirmed.set(s.invite_id, (confirmed.get(s.invite_id) ?? 0) + (s.amount_kobo as number));
+  }
   return payments
     .filter((p) => byId.has(p.invite_id))
     .map((p) => {
@@ -255,12 +290,19 @@ export async function listClaims(eventId: number): Promise<Claim[]> {
         inviterName: nameOf.get(invite.inviter_id) ?? "",
         payerName: invite.guest_first_name,
         amount: formatNaira(p.amount_kobo),
-        duplicate: (count.get(p.invite_id) ?? 0) > 1,
+        duplicate: (owed.get(p.invite_id) ?? 0) > price,
+        part: partOf(price, confirmed.get(p.invite_id) ?? 0, p.amount_kobo),
       };
     });
 }
 
-export type ConfirmResult = { guest: string; cardReady: boolean; notifyHref: string | null };
+function partOf(price: number, paidBefore: number, amount: number): Claim["part"] {
+  if (!paidBefore && amount >= price) return null;
+  return { paidBefore: paidBefore ? formatNaira(paidBefore) : null, left: formatNaira(balanceKobo(price, paidBefore + amount)) };
+}
+
+/** `balance` is set when the payment was a part and some of the price is still to come. */
+export type ConfirmResult = { guest: string; cardReady: boolean; notifyHref: string | null; balance: string | null };
 
 function notify(inv: Invite): string {
   return waLink(inv.guest_phone_e164, cardReadyMessage(inv.guest_first_name, inviteLink(inv.token)));
@@ -284,15 +326,29 @@ export async function confirmPayment(eventId: number, paymentId: string, adminId
   const inv = await getInvite(p.invite_id);
   if (!inv) return null;
   await audit("admin", adminId, "confirmed", { reference: p.reference }, inv.id);
+  const event = await getEvent(inv.event_id);
+  const price = event.price_kobo;
+  const paid = await paidSoFar(inv.id);
+  // Only pay small small events count parts. Elsewhere a payment made at an older price still counts in full.
+  if (event.installments && !isFullyPaid(price, paid)) {
+    // A part payment. The seat stays theirs with no deadline, and they send the rest when ready.
+    await db()
+      .from("invites")
+      .update({ status: "said_yes", expires_at: null, hold_remaining_ms: null })
+      .eq("id", inv.id)
+      .in("status", ["said_yes", "awaiting_confirmation"]);
+    await audit("system", null, "part_paid", { paid_kobo: paid, price_kobo: price }, inv.id);
+    return { guest: inv.guest_first_name, cardReady: false, notifyHref: null, balance: formatNaira(balanceKobo(price, paid)) };
+  }
   if (inv.yes_at) {
     const paid = await markPaid(inv);
     if (paid) await audit("system", null, "paid", {}, inv.id);
     // Whoever did not pay no longer needs to: their unpaid transfer details stop working.
     await db().from("payments").update({ status: "void" }).eq("invite_id", inv.id).neq("id", p.id).in("status", ["open", "not_found"]);
-    return { guest: inv.guest_first_name, cardReady: true, notifyHref: notify(inv) };
+    return { guest: inv.guest_first_name, cardReady: true, notifyHref: notify(inv), balance: null };
   }
   await db().from("invites").update({ covered: true, expires_at: null, hold_remaining_ms: null }).eq("id", inv.id);
-  return { guest: inv.guest_first_name, cardReady: false, notifyHref: null };
+  return { guest: inv.guest_first_name, cardReady: false, notifyHref: null, balance: null };
 }
 
 /** Not found: the guest goes back to the transfer screen and the clock resumes with at least 6 hours. */
@@ -310,7 +366,10 @@ export async function notFoundPayment(eventId: number, paymentId: string, adminI
   const inv = await getInvite(p.invite_id);
   if (!inv) return null;
   if (inv.status === "awaiting_confirmation") {
-    await db().from("invites").update({ status: "said_yes", ...resumedClock(inv) }).eq("id", inv.id).eq("status", "awaiting_confirmation");
+    // A guest who has already paid a part keeps their seat with no deadline.
+    const partPaid = (await paidSoFar(inv.id)) > 0;
+    const clock = partPaid ? { expires_at: null, hold_remaining_ms: null } : resumedClock(inv);
+    await db().from("invites").update({ status: "said_yes", ...clock }).eq("id", inv.id).eq("status", "awaiting_confirmation");
   }
   await audit("admin", adminId, "not_found", { reference: p.reference }, inv.id);
   return inv.guest_first_name;

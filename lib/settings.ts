@@ -17,6 +17,7 @@ function withDefaults(row: Record<string, unknown>): EventRow {
     end_date: (row.end_date as string | null) ?? null,
     days: Array.isArray(row.days) ? row.days : [],
     card: cardDesign(row.card),
+    installments: row.installments === true,
   } as EventRow;
 }
 
@@ -48,6 +49,31 @@ export async function createEvent(name: string, actorId: string): Promise<EventR
   return withDefaults(data);
 }
 
+/** True when what the super admin typed names this event. Case and extra spaces don't matter. */
+export function confirmsEventName(typed: string, name: string): boolean {
+  const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+  return !!norm(typed) && norm(typed) === norm(name);
+}
+
+/**
+ * Wipes one event's guests: every invite (and its devices), payment and activity line. The event's
+ * settings, members, admins and payout accounts stay, so it can start again. Cannot be undone.
+ */
+export async function clearEventData(eventId: number, actorId: string): Promise<{ invites: number; payments: number }> {
+  const count = async (table: string) => {
+    const { count: n } = await db().from(table).select("*", { count: "exact", head: true }).eq("event_id", eventId);
+    return n ?? 0;
+  };
+  const [invites, payments] = await Promise.all([count("invites"), count("payments")]);
+  // Payments point at invites, so they go first. Devices go with their invite.
+  for (const table of ["payments", "audit_log", "invites"]) {
+    const { error } = await db().from(table).delete().eq("event_id", eventId);
+    if (error) throw new Error(`Could not clear ${table}: ${error.message}`);
+  }
+  await audit("admin", actorId, "event_cleared", { invites, payments }, null, eventId);
+  return { invites, payments };
+}
+
 export async function updateEvent(eventId: number, patch: EventPatch, adminId: string): Promise<EventRow> {
   const current = await getEvent(eventId);
   const prefix = derivePrefix(patch.name) ?? current.reference_prefix;
@@ -58,7 +84,7 @@ export async function updateEvent(eventId: number, patch: EventPatch, adminId: s
     .select("*")
     .single();
   if (error || !data) {
-    if (/end_date|days|hold_window|card/.test(error?.message ?? "")) throw new Error(MIGRATION_HINT);
+    if (/end_date|days|hold_window|card|installments/.test(error?.message ?? "")) throw new Error(MIGRATION_HINT);
     throw new Error(`Could not save the event: ${error?.message}`);
   }
   // Postgres returns times as "+00:00" strings, so compare instants, not text.
