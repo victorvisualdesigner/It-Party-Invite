@@ -54,6 +54,30 @@ const ICON: Record<string, string> = {
 const icon = (name: string) =>
   `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name]}</svg>`;
 
+/**
+ * The VIP crest: an art deco fan behind a cut diamond with VIP set in the display face, flanked by
+ * hairlines. Drawn in the VIP gold so it reads on the black label paper.
+ */
+function vipCrest(): string {
+  const rays = Array.from({ length: 9 }, (_, i) => {
+    const a = (Math.PI * (i + 1)) / 10;
+    const x = 60 - Math.cos(a) * 34;
+    const y = 40 - Math.sin(a) * 34;
+    return `<path d="M60 40L${x.toFixed(1)} ${y.toFixed(1)}"/>`;
+  }).join("");
+  return (
+    `<svg viewBox="0 0 120 64" aria-hidden="true"><defs>` +
+    `<linearGradient id="vipg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--vip-foil-light)"/><stop offset=".45" style="stop-color:var(--vip-gold-400)"/><stop offset="1" style="stop-color:var(--vip-foil-dark)"/></linearGradient></defs>` +
+    `<g class="rays" stroke="url(#vipg)" stroke-width=".6" opacity=".55">${rays}</g>` +
+    `<path d="M4 40H38M82 40H116" stroke="url(#vipg)" stroke-width=".8"/>` +
+    `<circle cx="38" cy="40" r="1.4" fill="url(#vipg)"/><circle cx="82" cy="40" r="1.4" fill="url(#vipg)"/>` +
+    `<path d="M60 18L76 40L60 62L44 40Z" fill="var(--vip-950)" stroke="url(#vipg)" stroke-width="1.2"/>` +
+    `<path d="M60 22.5L72.5 40L60 57.5L47.5 40Z" fill="none" stroke="url(#vipg)" stroke-width=".5" opacity=".7"/>` +
+    `<text x="60" y="43.6" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="700" font-size="9.5" letter-spacing="1.2" fill="url(#vipg)">VIP</text>` +
+    `</svg>`
+  );
+}
+
 const CORNER = `<path d="M2 24V8a6 6 0 0 1 6-6h16"/><path d="M6 24V11a5 5 0 0 1 5-5h13"/><circle cx="6" cy="6" r="1.4" fill="currentColor" stroke="none"/>`;
 const corner = (pos: string) => `<svg class="corner ${pos}" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">${CORNER}</svg>`;
 
@@ -107,10 +131,12 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
   // The event's card design, only once the guest is in. Before unlock the page wears the house colours.
   const card = "event" in state ? state.event.card : null;
   const design = card ? ` data-card-theme="${esc(card.theme)}" data-card-foil="${esc(card.foil)}" data-card-paper="${esc(card.paper)}"` : "";
+  // The VIP look, only once the guest is in. The lock screen never says who is VIP.
+  const vip = "vip" in state && state.vip ? ` data-vip=""` : "";
   const ogImage = `${appUrl.replace(/\/+$/, "")}/og-envelope.png`;
 
   return `<!doctype html>
-<html lang="en"${design}>
+<html lang="en"${design}${vip}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -181,6 +207,10 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 <section class="screen" id="s-card" hidden aria-labelledby="card-headline">
   <article class="invite" id="invite">
     <span class="card-shine" aria-hidden="true"></span>
+    <span class="vip-only vip-edge t" aria-hidden="true"></span><span class="vip-only vip-edge r" aria-hidden="true"></span><span class="vip-only vip-edge b" aria-hidden="true"></span><span class="vip-only vip-edge l" aria-hidden="true"></span>
+    <span class="vip-only vip-spark s1" aria-hidden="true"></span><span class="vip-only vip-spark s2" aria-hidden="true"></span><span class="vip-only vip-spark s3" aria-hidden="true"></span><span class="vip-only vip-spark s4" aria-hidden="true"></span><span class="vip-only vip-spark s5" aria-hidden="true"></span><span class="vip-only vip-spark s6" aria-hidden="true"></span>
+    <div class="vip-only vip-crest">${vipCrest()}</div>
+    <p class="vip-only vip-tag">${esc(t("guest.vip.tag"))}</p>
     ${corner("tl")}${corner("tr")}${corner("bl")}${corner("br")}
     <p class="card-eyebrow" id="card-event"></p>
     <p class="card-sub" id="card-sub" hidden></p>
@@ -212,6 +242,8 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 <section class="screen" id="s-held" hidden aria-labelledby="held-title">
   <div class="env-mount" id="env-held">${envelopeHtml({ glow: true })}</div>
   <h1 class="display" id="held-title">${esc(t("guest.held.title"))}</h1>
+  <p class="notice" id="held-notice" role="status" hidden></p>
+  <div class="progress" id="held-progress" hidden><div class="bar"><i></i></div><span></span></div>
   <p class="lede" id="held-body"></p>
   <button class="btn btn-gold btn-wide" type="button" id="held-pay">${esc(t("guest.held.pay"))}</button>
   <p class="small">${esc(t("guest.awaiting.small"))}</p>
@@ -219,6 +251,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
 
 <section class="screen" id="s-asked" hidden aria-labelledby="asked-title">
   <div class="env-mount" id="env-asked">${envelopeHtml({ glow: true })}</div>
+  <p class="pending" id="asked-pending"><i aria-hidden="true"></i><span></span></p>
   <h1 class="display" id="asked-title"></h1>
   <p class="lede" id="asked-body"></p>
   <p class="recap" id="asked-held" hidden></p>
@@ -249,7 +282,7 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
       <div class="t-face t-front">
         <span class="foil-sweep" id="foil" aria-hidden="true"></span>
         <div class="t-main">
-          <div class="t-top"><span id="t-event"></span><span>${esc(t("guest.ticket.admits"))}</span></div>
+          <div class="t-top"><span id="t-event"></span><span id="t-admits">${esc(t("guest.ticket.admits"))}</span></div>
           <p class="t-sub" id="t-sub" hidden></p>
           <h1 class="t-name" id="t-name"></h1>
           <p class="t-by" id="t-by"></p>
@@ -289,16 +322,23 @@ export function guestPageHtml(state: GuestView, assets: GuestAssets, appUrl: str
       <span class="held" id="held"></span>
     </div>
     <p class="intro">${esc(t("guest.transfer.intro"))}</p>
-    <div class="rows" id="rows"></div>
-    <div class="parts" id="parts" hidden>
-      <button class="link-btn" type="button" id="part-toggle" aria-expanded="false" aria-controls="part-step"></button>
-      <div class="field" id="part-step" hidden>
+    <div class="plan" id="plan" hidden>
+      <div class="progress" id="sheet-progress" hidden><div class="bar"><i></i></div><span></span></div>
+      <fieldset class="plan-choice">
+        <legend>${esc(t("guest.transfer.plan_label"))}</legend>
+        <label class="plan-opt"><input type="radio" name="plan" value="full" id="plan-full" checked><span><b>${esc(t("guest.transfer.plan_full"))}</b><small id="plan-full-sub"></small></span></label>
+        <label class="plan-opt"><input type="radio" name="plan" value="parts" id="plan-parts"><span><b>${esc(t("guest.transfer.plan_parts"))}</b><small id="plan-parts-sub"></small></span></label>
+      </fieldset>
+      <div class="part-panel" id="part-step" hidden>
         <label for="part-amount">${esc(t("guest.transfer.part_label"))}</label>
-        <div class="input-affix"><span class="affix" aria-hidden="true">₦</span><input class="input num" id="part-amount" type="text" inputmode="numeric" autocomplete="off" aria-describedby="part-help"></div>
-        <span class="help" id="part-help"></span>
+        <div class="input-affix part-input"><span class="affix" aria-hidden="true">₦</span><input class="input num" id="part-amount" type="text" inputmode="numeric" autocomplete="off" aria-describedby="part-after part-help"></div>
+        <div class="quick" id="part-quick" role="group" aria-label="${esc(t("guest.transfer.part_quick"))}"></div>
+        <p class="part-after" id="part-after" aria-live="polite"></p>
+        <p class="help" id="part-help"></p>
         <p class="error" id="part-error" role="alert" hidden></p>
       </div>
     </div>
+    <div class="rows" id="rows"></div>
     <p class="note" id="hold-line"></p>
     <p class="refund" id="refund"></p>
     <div id="sent-step" hidden>

@@ -1,7 +1,7 @@
 // Read models for the admin portal: overview numbers, the guest list, the door list and the board.
 // Everything is about one event, except eventBreakdown, which the superadmin uses to see them all.
 import "server-only";
-import { canLetInFree, isAskingInviter } from "@/lib/ask-inviter";
+import { askAllowed, canLetInFree, isAskingInviter } from "@/lib/ask-inviter";
 import { t } from "@/lib/copy";
 import { db } from "@/lib/db";
 import { inviteLink, sweep } from "@/lib/invites";
@@ -9,6 +9,7 @@ import { cardReadyMessage, revealMessage } from "@/lib/messages";
 import { formatNaira } from "@/lib/money";
 import { listTeam, type TeamRow } from "@/lib/people";
 import { maskPhone } from "@/lib/phone";
+import { priceEditable, seatPrice } from "@/lib/price";
 import { getEvent } from "@/lib/settings";
 import { SLOT_STATUSES, type Invite, type Payment, type Role } from "@/lib/types";
 import { waLink } from "@/lib/whatsapp";
@@ -116,6 +117,22 @@ export type GuestRow = {
   canFree: boolean;
   /** Pay small small: "₦20,000 of ₦50,000 paid", while some of the price is still to come. */
   partPaid: string | null;
+  /** The black and gold VIP card. */
+  vip: boolean;
+  /** Their own price, when a host set one: "₦30,000", or "Free". Null means the event's price. */
+  ownPrice: string | null;
+  /** Their own price in whole naira for the form, or "" for the event's price. */
+  ownPriceDigits: string;
+  /** The event's price, for the form's hint. */
+  eventPrice: string;
+  /** A host can change their price now. */
+  canPrice: boolean;
+  /** They may say their inviter is paying. */
+  askOn: boolean;
+  /** A host turned down their request for the inviter to pay. */
+  askRejected: boolean;
+  /** When they asked their inviter to pay, while they still wait. */
+  askedAt: string | null;
   notifyHref: string | null;
   revealHref: string | null;
 };
@@ -127,7 +144,7 @@ export async function guestRows(eventId: number): Promise<GuestRow[]> {
     db().from("people").select("id, role").or(`event_id.eq.${eventId},event_id.is.null`),
   ]);
   const roleOf = new Map((roles ?? []).map((p) => [p.id as string, p.role as Role]));
-  const price = (await getEvent(eventId)).price_kobo;
+  const event = await getEvent(eventId);
   const { data: payments } = await db()
     .from("payments")
     .select("invite_id, reference, status, amount_kobo, payer_type, created_at")
@@ -152,6 +169,8 @@ export async function guestRows(eventId: number): Promise<GuestRow[]> {
   return invites.map((i) => {
     const link = inviteLink(i.token);
     const paid = i.status === "paid";
+    const price = seatPrice(i, event);
+    const own = i.price_kobo ?? null;
     return {
       id: i.id,
       token: i.token,
@@ -172,6 +191,14 @@ export async function guestRows(eventId: number): Promise<GuestRow[]> {
         !paid && (confirmedSum.get(i.id) ?? 0) > 0
           ? t("admin.guests.part_paid", { paid: formatNaira(confirmedSum.get(i.id) ?? 0), price: formatNaira(price) })
           : null,
+      vip: !!i.vip,
+      ownPrice: own == null ? null : own === 0 ? t("admin.guests.manage.free") : formatNaira(own),
+      ownPriceDigits: own == null ? "" : String(Math.round(own / 100)),
+      eventPrice: formatNaira(event.price_kobo),
+      canPrice: priceEditable(i) && !i.covered,
+      askOn: askAllowed(i),
+      askRejected: !!i.pay_request_rejected_at,
+      askedAt: isAskingInviter(i) ? i.pay_requested_at : null,
       notifyHref: paid ? waLink(i.guest_phone_e164, cardReadyMessage(i.guest_first_name, link)) : null,
       revealHref: paid ? waLink(i.guest_phone_e164, revealMessage(i.guest_first_name, link)) : null,
     };

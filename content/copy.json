@@ -58,7 +58,8 @@
       "date_at": "{date} at {time}",
       "days_label": "Day by day",
       "day_n": "Day {n}",
-      "day_dress": "Dress code: {dress}"
+      "day_dress": "Dress code: {dress}",
+      "parts_hint": "You can pay small small"
     },
     "transfer": {
       "title": "Lock your seat",
@@ -91,7 +92,16 @@
       "part_help": "At least {min}. Up to {balance}.",
       "part_error": "Enter an amount from {min} to {balance}.",
       "paid_so_far_label": "Paid so far",
-      "balance_label": "Left to pay"
+      "balance_label": "Left to pay",
+      "plan_label": "How do you want to pay?",
+      "plan_full": "All at once",
+      "plan_parts": "Pay small small",
+      "plan_parts_sub": "From {min}",
+      "part_after": "After this, {left} left to pay.",
+      "part_clears": "This clears your balance. Your card unlocks once it's confirmed.",
+      "part_quick": "Quick amounts",
+      "progress": "{paid} of {price} paid",
+      "progress_after": "{paid} of {price} paid once this is confirmed"
     },
     "awaiting": {
       "title": "Your card is being pressed",
@@ -101,13 +111,17 @@
       "member_title": "{inviter} is taking care of this",
       "member_body": "Your seat is being paid for. Your card unlocks the moment the hosts confirm it."
     },
+    "vip": {
+      "tag": "VIP invitation"
+    },
     "held": {
       "_about": "After the guest taps I'll pay later, and whenever they come back before paying. Opening the page brings the transfer details straight up.",
       "title": "Your seat is saved",
       "body": "We're holding it for you until {expires_at}. Pay any time before then through this same link.",
       "pay": "Continue to pay",
       "part_title": "{paid} received",
-      "part_body": "{balance} left to pay. Your seat stays yours, so send the rest whenever you're ready."
+      "part_body": "{balance} left to pay. Your seat stays yours, so send the rest whenever you're ready.",
+      "rejected": "{inviter} can't cover this one. Your seat is still saved, so you can pay for it yourself."
     },
     "asked": {
       "_about": "After the guest taps {inviter} is paying for me on the transfer sheet. The app does not message the inviter: the guest sends the WhatsApp line.",
@@ -115,7 +129,8 @@
       "body": "{inviter} will see your ask on their guest list. A quick message makes sure they see it today.",
       "held": "Your seat stays held until {expires_at}.",
       "whatsapp": "Message {inviter} on WhatsApp",
-      "pay_myself": "I'll pay myself instead"
+      "pay_myself": "I'll pay myself instead",
+      "pending": "Waiting on {inviter}"
     },
     "not_found": {
       "title": "We couldn't find that transfer yet",
@@ -131,6 +146,7 @@
     "ticket": {
       "eyebrow": "{event}",
       "admits": "Admits one",
+      "admits_vip": "VIP · Admits one",
       "name": "{guest}",
       "invited_by": "Invited by {inviter}",
       "date_label": "When",
@@ -631,7 +647,39 @@
       "let_in_free_title": "Let {guest} in free",
       "let_in_free_body": "{guest} asked {inviter} to pay. As a host, {inviter} can let them in without a transfer, and their card unlocks right away.",
       "let_in_free_done": "{guest} is in, free of charge.",
-      "part_paid": "{paid} of {price} paid"
+      "part_paid": "{paid} of {price} paid",
+      "manage": {
+        "button": "Manage",
+        "subtitle": "Invited by {inviter}",
+        "price_title": "Their price",
+        "price_label": "Price for {guest}",
+        "price_help": "Everyone else pays {price}. Leave it empty to use that, or enter 0 to let them in free.",
+        "price_save": "Save price",
+        "price_saved": "{guest}'s price is saved.",
+        "price_free_done": "{guest} is in free. Their card is ready.",
+        "price_locked": "Their price can't change now. They've paid, or a transfer is being checked.",
+        "price_error": "Enter a whole number of naira, or leave it empty.",
+        "free": "Free",
+        "own_price_chip": "Own price {price}",
+        "vip_title": "VIP card",
+        "vip_label": "Send {guest} the VIP card",
+        "vip_help": "Black and gold, with a crest and moving foil. They see it the next time they open their link.",
+        "vip_on": "{guest} gets the VIP card.",
+        "vip_off": "{guest} gets the event's card.",
+        "vip_chip": "VIP",
+        "ask_title": "Their inviter paying",
+        "ask_label": "{guest} can say {inviter} is paying",
+        "ask_help": "Turn this off if {inviter} won't be paying. {guest} then only sees the transfer details.",
+        "ask_on_done": "{guest} can ask {inviter} to pay again.",
+        "ask_off_done": "{guest} pays for themselves now.",
+        "asking_note": "{guest} asked {inviter} to pay {when}. They see a pending screen until {inviter} pays and you confirm it.",
+        "reject": "Turn down the request",
+        "reject_title": "Turn down {guest}'s request?",
+        "reject_body": "Do this when {inviter} isn't paying. {guest} sees a note and the transfer details, and their seat stays held for at least 6 more hours.",
+        "reject_done": "Request turned down. {guest} will pay for themselves.",
+        "rejected_note": "You turned down {guest}'s request. Turn the switch back on to let them ask again.",
+        "done": "Done"
+      }
     },
     "invite": {
       "subtitle": "Your own invites. You have Unlimited."

@@ -32,13 +32,23 @@ describe("pay small small", () => {
   });
 
   it("shows the guest what is in and what is left", () => {
-    expect(partsView(PRICE, 0)).toEqual({ paid: null, balance: "₦50,000", balance_digits: "50000", min: "₦1,000", min_digits: "1000" });
+    expect(partsView(PRICE, 0)).toEqual({
+      paid: null,
+      paid_digits: "0",
+      price: "₦50,000",
+      price_digits: "50000",
+      balance: "₦50,000",
+      balance_digits: "50000",
+      min: "₦1,000",
+      min_digits: "1000",
+    });
     expect(partsView(PRICE, 2_000_000)).toMatchObject({ paid: "₦20,000", balance: "₦30,000", balance_digits: "30000" });
   });
 
   it("ships the amount field hidden, and nothing about money before unlock", () => {
     const html = guestPageHtml({ screen: "lock", masked: "080•••••567" } as GuestView, { css: "/g/a.css", js: "/g/a.js" }, "https://invite.example.com");
-    expect(html).toMatch(/<div class="parts" id="parts" hidden>/);
+    expect(html).toMatch(/<div class="plan" id="plan" hidden>/);
+    expect(html).toMatch(/id="plan-full" checked/);
     expect(html).toMatch(/<span class="card-shine" aria-hidden="true"><\/span>/);
     expect(html).not.toMatch(/₦\d/);
   });

@@ -135,6 +135,8 @@
       var a = "data-card-" + k;
       if (c && c[k]) root.setAttribute(a, c[k]); else root.removeAttribute(a);
     });
+    // The VIP look: black label paper, the VIP gold and the crest. Only once the guest is in.
+    if (s && s.vip) root.setAttribute("data-vip", ""); else root.removeAttribute("data-vip");
   }
   function subInto(el, s) {
     var sub = s && s.event && s.event.card && s.event.card.subtitle;
@@ -172,7 +174,11 @@
           (d.dress ? "<small>" + esc(t("guest.card.day_dress", { dress: d.dress })) + "</small>" : "") + "</span></li>";
       }).join("") + "</ul>", ""]);
     } else if (ev.dress) rows.push([t("guest.card.dress_label"), esc(ev.dress), ""]);
-    if (!forTicket) rows.push([t("guest.card.price_label"), s.covered ? esc(t("guest.card.covered_value", { inviter: s.inviter })) : esc(ev.price), s.covered ? "muted" : "price"]);
+    if (!forTicket) {
+      // Before Yes, a guest learns early that they can pay small small.
+      var hint = !s.covered && s.parts && !s.parts.paid ? '<small class="parts-hint">' + esc(t("guest.card.parts_hint")) + "</small>" : "";
+      rows.push([t("guest.card.price_label"), s.covered ? esc(t("guest.card.covered_value", { inviter: s.inviter })) : esc(ev.price) + hint, s.covered ? "muted" : "price"]);
+    }
     return rows.map(function (r) { return "<dt>" + esc(r[0]) + '</dt><dd class="' + r[2] + '">' + r[1] + "</dd>"; }).join("");
   }
   function ended(title, body) { $("#ended-title").textContent = title; $("#ended-body").textContent = body; }
@@ -207,6 +213,9 @@
     },
     held: function (s) {
       var ends = holdEnds(s), parts = s.parts;
+      var notice = $("#held-notice");
+      notice.textContent = s.ask_rejected ? t("guest.held.rejected", { inviter: s.inviter }) : ""; notice.hidden = !s.ask_rejected;
+      progressInto($("#held-progress"), parts && parts.paid ? parts : null, 0);
       if (parts && parts.paid) {
         // Part paid: what is in, what is left. The seat has no deadline now.
         $("#held-title").textContent = t("guest.held.part_title", { paid: parts.paid });
@@ -218,6 +227,7 @@
       var to = $("#env-held .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest });
     },
     asked: function (s) {
+      $("#asked-pending span").textContent = t("guest.asked.pending", { inviter: s.inviter });
       $("#asked-title").textContent = t("guest.asked.title", { inviter: s.inviter });
       $("#asked-body").textContent = t("guest.asked.body", { inviter: s.inviter });
       var held = $("#asked-held"), ends = holdEnds(s);
@@ -235,6 +245,7 @@
     covered: function (s) { $("#cov-body").textContent = t("guest.covered.body", { inviter: s.inviter }); var to = $("#env-covered .to"); if (to) to.textContent = t("guest.card.letter_to", { guest: s.guest }); },
     ticket: function (s) {
       $("#t-event").textContent = s.event.name;
+      $("#t-admits").textContent = s.vip ? t("guest.ticket.admits_vip") : t("guest.ticket.admits");
       subInto($("#t-sub"), s);
       $("#t-name").textContent = s.guest;
       $("#t-by").textContent = t("guest.ticket.invited_by", { inviter: s.inviter });
@@ -692,7 +703,7 @@
     $("#sender-error").hidden = true;
     $("#btn-sent").textContent = n === 0 ? t("guest.transfer.sent_button") : t("guest.transfer.confirm_sent");
     // Asking the inviter is a choice before the transfer, not after the guest says they sent it.
-    $("#btn-ask").hidden = n !== 0 || !(state && state.inviter);
+    $("#btn-ask").hidden = n !== 0 || !(state && state.inviter && state.can_ask !== false);
     if (n === 1) setTimeout(function () { $("#sender").focus(); }, 60);
   }
   $("#rows").addEventListener("click", function (e) {
@@ -767,10 +778,15 @@
   }
 
   /* ---------- Pay small small ---------- */
+  // The guest first picks how to pay: all at once, or small small. Small small opens one big amount
+  // field with quick amounts, and a live line that says what will be left. The Amount row and its
+  // Copy button always show what they are sending now.
   var partMode = false;
   function groupDigits(d) { return String(d).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  function naira(d) { return "₦" + groupDigits(d); }
+  function typedAmount() { return Number(($("#part-amount").value || "").replace(/\D/g, "")) || 0; }
   function partAmount() {
-    var parts = state && state.parts, n = Number(($("#part-amount").value || "").replace(/\D/g, ""));
+    var parts = state && state.parts, n = typedAmount();
     if (!parts || !n) return null;
     return n >= Number(parts.min_digits) && n <= Number(parts.balance_digits) ? n : null;
   }
@@ -779,38 +795,84 @@
     el.textContent = t("guest.transfer.part_error", { min: parts.min, balance: parts.balance }); el.hidden = false;
     $("#part-amount").setAttribute("aria-invalid", "true"); $("#part-amount").focus();
   }
-  // The Amount row shows what the guest is sending now, and its Copy button copies those digits.
   function showAmount(text, digits) {
     var row = $("#rows .amt"); if (!row) return;
     row.querySelector(".v").textContent = text;
     var b = row.querySelector(".copy"); if (b) b.setAttribute("data-copy", digits);
   }
+  // A bar of what is paid, with "₦20,000 of ₦50,000 paid" beside it.
+  function progressInto(el, parts, extra) {
+    if (!parts || (!parts.paid && !extra)) { el.hidden = true; return; }
+    var price = Number(parts.price_digits) || 1, paid = Number(parts.paid_digits) || 0;
+    el.querySelector("i").style.transform = "scaleX(" + Math.min(1, paid / price).toFixed(3) + ")";
+    var b = el.querySelector("b");
+    if (extra) {
+      if (!b) { b = document.createElement("b"); el.querySelector(".bar").appendChild(b); }
+      b.style.transform = "translateX(" + (Math.min(1, paid / price) * 100).toFixed(1) + "%) scaleX(" + Math.min(1, extra / price).toFixed(3) + ")";
+    } else if (b) b.remove();
+    el.querySelector("span").textContent = extra
+      ? t("guest.transfer.progress_after", { paid: naira(paid + extra), price: parts.price })
+      : t("guest.transfer.progress", { paid: parts.paid || "₦0", price: parts.price });
+    el.hidden = false;
+  }
+  // Round, sensible amounts: a quarter, half and three quarters of what is left, to the nearest ₦1,000.
+  function quickAmounts(parts) {
+    var bal = Number(parts.balance_digits), min = Number(parts.min_digits), out = [];
+    [0.25, 0.5, 0.75].forEach(function (f) {
+      var v = Math.round((bal * f) / 1000) * 1000;
+      if (v >= min && v < bal && out.indexOf(v) < 0) out.push(v);
+    });
+    return out;
+  }
+  function afterLine() {
+    var parts = state && state.parts, el = $("#part-after"); if (!parts) return;
+    var n = partAmount();
+    if (!n) { el.textContent = ""; progressInto($("#sheet-progress"), parts, 0); return; }
+    var left = Number(parts.balance_digits) - n;
+    el.textContent = left > 0 ? t("guest.transfer.part_after", { left: naira(left) }) : t("guest.transfer.part_clears");
+    progressInto($("#sheet-progress"), parts, n);
+  }
   function setPartMode(on) {
     partMode = on;
+    $("#plan-parts").checked = on; $("#plan-full").checked = !on;
     $("#part-step").hidden = !on;
-    $("#part-toggle").textContent = on ? t("guest.transfer.part_full") : t("guest.transfer.part_toggle");
-    $("#part-toggle").setAttribute("aria-expanded", on ? "true" : "false");
     $("#part-error").hidden = true; $("#part-amount").removeAttribute("aria-invalid");
     var n = on ? partAmount() : null;
-    if (n) showAmount("₦" + groupDigits(n), String(n));
+    if (n) showAmount(naira(n), String(n));
     else if (sheetPayment) showAmount(sheetPayment.amount, sheetPayment.amount_digits);
+    afterLine();
+    if (on && !reduced) anim($("#part-step"), [{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: E.out });
     if (on) setTimeout(function () { $("#part-amount").focus(); }, 60);
   }
   function setupParts(p, keep) {
     var parts = state && state.parts;
-    $("#parts").hidden = !parts;
+    $("#plan").hidden = !parts;
     if (!parts) { partMode = false; return; }
+    $("#plan-full-sub").textContent = parts.balance;
+    $("#plan-parts-sub").textContent = t("guest.transfer.plan_parts_sub", { min: parts.min });
     $("#part-help").textContent = t("guest.transfer.part_help", { min: parts.min, balance: parts.balance });
+    $("#part-quick").innerHTML = quickAmounts(parts).map(function (v) {
+      return '<button class="chip-btn" type="button" data-amount="' + v + '">' + esc(naira(v)) + "</button>";
+    }).join("");
+    progressInto($("#sheet-progress"), parts, 0);
     if (!keep) { $("#part-amount").value = ""; setPartMode(false); }
   }
-  $("#part-toggle").addEventListener("click", function () { setPartMode(!partMode); });
+  $("#plan-full").addEventListener("change", function () { if (this.checked) setPartMode(false); });
+  $("#plan-parts").addEventListener("change", function () { if (this.checked) setPartMode(true); });
+  $("#part-quick").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-amount]"); if (!b) return;
+    $("#part-amount").value = groupDigits(b.getAttribute("data-amount"));
+    $("#part-amount").dispatchEvent(new Event("input"));
+  });
   $("#part-amount").addEventListener("input", function () {
     var el = this, d = el.value.replace(/\D/g, "").slice(0, 9);
     el.value = d ? groupDigits(d) : "";
     $("#part-error").hidden = true; el.removeAttribute("aria-invalid");
     var n = partAmount();
-    if (n) showAmount("₦" + groupDigits(n), String(n));
+    if (n) showAmount(naira(n), String(n));
     else if (sheetPayment) showAmount(sheetPayment.amount, sheetPayment.amount_digits);
+    $("#part-quick").querySelectorAll("[data-amount]").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-amount") === d ? "true" : "false"); });
+    afterLine();
   });
 
   /* ---------- Not found and covered ---------- */
@@ -978,7 +1040,7 @@
     x.textBaseline = "alphabetic";
     x.fillStyle = v("--gold-400"); x.font = "600 30px " + UI; track("5px");
     x.textAlign = "left"; x.fillText(ev.name.toUpperCase(), 90, 132);
-    x.textAlign = "right"; x.fillText(t("guest.ticket.admits").toUpperCase(), W - 90, 132); x.textAlign = "left"; track("0px");
+    x.textAlign = "right"; x.fillText((s.vip ? t("guest.ticket.admits_vip") : t("guest.ticket.admits")).toUpperCase(), W - 90, 132); x.textAlign = "left"; track("0px");
     if (subtitle) { x.fillStyle = v("--mist-400"); x.font = SUB; x.fillText(subtitle, 90, 186); }
     var size = 260; x.font = "700 " + size + "px 'Tangerine'"; while (x.measureText(s.guest).width > W - 200 && size > 96) { size -= 8; x.font = "700 " + size + "px 'Tangerine'"; }
     var fg = x.createLinearGradient(90, 0, 90 + x.measureText(s.guest).width, 0);

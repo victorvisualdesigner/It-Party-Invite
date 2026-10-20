@@ -148,6 +148,14 @@ export type Invite = {
   covered: boolean;
   /** When the guest said, on the transfer screen, that their inviter is paying. Null otherwise. */
   pay_requested_at: string | null;
+  /** This guest's own price in kobo, set by a host. Null means the event's price; zero is free. */
+  price_kobo?: number | null;
+  /** The guest gets the black and gold VIP card. */
+  vip?: boolean;
+  /** A host turned off "{inviter} is paying for me" for this guest. */
+  ask_inviter_off?: boolean;
+  /** When a host turned down this guest's request for their inviter to pay. */
+  pay_request_rejected_at?: string | null;
   wrong_attempts: number;
   locked_until: string | null;
   ticket_code: string | null;

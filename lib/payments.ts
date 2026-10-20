@@ -6,6 +6,7 @@ import { ASK_STATUSES, canLetInFree } from "@/lib/ask-inviter";
 import { audit } from "@/lib/audit";
 import { db, isUniqueViolation } from "@/lib/db";
 import { balanceKobo, isFullyPaid, parsePartAmount } from "@/lib/installments";
+import { seatPrice } from "@/lib/price";
 import { groupAccountNumber } from "@/lib/event";
 import { getInvite, inviteLink, pausedClock, resumedClock } from "@/lib/invites";
 import { cardReadyMessage } from "@/lib/messages";
@@ -79,7 +80,7 @@ export async function openGuestPayment(inv: Invite): Promise<Payment | null> {
   if (existing) return existing;
   const event = await getEvent(inv.event_id);
   // After a part payment, the next transfer asks only for what is left.
-  const due = balanceKobo(event.price_kobo, await paidSoFar(inv.id));
+  const due = balanceKobo(seatPrice(inv, event), await paidSoFar(inv.id));
   if (due <= 0) return null;
   const { data: account } = await db().from("payout_accounts").select("id").eq("event_id", inv.event_id).eq("active", true).maybeSingle();
   if (!account) return null;
@@ -132,7 +133,7 @@ export async function openMemberPayment(inv: Invite, payerId: string): Promise<P
   if (existing && existing.status !== "confirmed") return existing;
   const event = await getEvent(inv.event_id);
   // The inviter covers whatever the guest has not paid yet.
-  const due = balanceKobo(event.price_kobo, await paidSoFar(inv.id));
+  const due = balanceKobo(seatPrice(inv, event), await paidSoFar(inv.id));
   if (due <= 0) return null;
   const { data: account } = await db().from("payout_accounts").select("id").eq("event_id", inv.event_id).eq("active", true).maybeSingle();
   if (!account) return null;
@@ -217,7 +218,7 @@ export async function claimGuestPayment(inv: Invite, senderName: string, part?: 
   if (part != null && part !== "") {
     const event = await getEvent(inv.event_id);
     if (event.installments) {
-      const amount = parsePartAmount(part, balanceKobo(event.price_kobo, await paidSoFar(inv.id)));
+      const amount = parsePartAmount(part, balanceKobo(seatPrice(inv, event), await paidSoFar(inv.id)));
       if (amount == null) return "amount";
       changes.amount_kobo = amount;
     }
@@ -268,7 +269,7 @@ export async function listClaims(eventId: number): Promise<Claim[]> {
     db().from("invites").select("*").in("id", inviteIds),
     db().from("payments").select("invite_id, status, amount_kobo").in("invite_id", inviteIds).in("status", ["claimed", "confirmed"]),
   ]);
-  const price = (await getEvent(eventId)).price_kobo;
+  const event = await getEvent(eventId);
   const inviterIds = [...new Set((invites ?? []).map((i) => i.inviter_id as string))];
   const { data: people } = await db().from("people").select("id, first_name").in("id", inviterIds);
   const nameOf = new Map((people ?? []).map((p) => [p.id as string, p.first_name as string]));
@@ -284,6 +285,7 @@ export async function listClaims(eventId: number): Promise<Claim[]> {
     .filter((p) => byId.has(p.invite_id))
     .map((p) => {
       const invite = byId.get(p.invite_id) as Invite;
+      const price = seatPrice(invite, event);
       return {
         payment: p,
         invite,
@@ -327,7 +329,7 @@ export async function confirmPayment(eventId: number, paymentId: string, adminId
   if (!inv) return null;
   await audit("admin", adminId, "confirmed", { reference: p.reference }, inv.id);
   const event = await getEvent(inv.event_id);
-  const price = event.price_kobo;
+  const price = seatPrice(inv, event);
   const paid = await paidSoFar(inv.id);
   // Only pay small small events count parts. Elsewhere a payment made at an older price still counts in full.
   if (event.installments && !isFullyPaid(price, paid)) {
@@ -410,13 +412,14 @@ export async function matchCandidates(eventId: number, query: string): Promise<M
   const event = await getEvent(eventId);
   const { data } = await db()
     .from("invites")
-    .select("id, guest_first_name, inviter_id, status")
+    .select("*")
     .eq("event_id", eventId)
     .in("status", ["sent", "opened", "said_yes", "awaiting_confirmation"])
     .order("guest_first_name");
   const digits = q.replace(/\D/g, "");
-  const amountMatch = !!digits && nairaDigits(event.price_kobo).startsWith(digits);
-  const rows = (data ?? []).filter((i) => !q || amountMatch || String(i.guest_first_name).toLowerCase().includes(q));
+  // A guest with their own price matches on that price.
+  const amountMatch = (i: Invite) => !!digits && nairaDigits(seatPrice(i, event)).startsWith(digits);
+  const rows = ((data ?? []) as Invite[]).filter((i) => !q || amountMatch(i) || String(i.guest_first_name).toLowerCase().includes(q));
   const ids = rows.map((r) => r.id as string);
   const [{ data: people }, { data: payments }] = await Promise.all([
     db().from("people").select("id, first_name").or(`event_id.eq.${eventId},event_id.is.null`),

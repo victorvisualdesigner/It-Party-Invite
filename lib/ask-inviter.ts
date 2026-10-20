@@ -7,9 +7,15 @@ import { isHost } from "@/lib/types";
 export const ASK_STATUSES: InviteStatus[] = ["opened", "said_yes"];
 
 type AskFields = { status: InviteStatus; covered: boolean; pay_requested_at: string | null };
+type AskRules = { ask_inviter_off?: boolean; pay_request_rejected_at?: string | null };
 
 export function canAskInviter(inv: Pick<AskFields, "status" | "covered">): boolean {
   return !inv.covered && ASK_STATUSES.includes(inv.status);
+}
+
+/** A host can turn the option off for one guest, and a turned down request can't be made again. */
+export function askAllowed(inv: AskRules): boolean {
+  return !inv.ask_inviter_off && !inv.pay_request_rejected_at;
 }
 
 /** True while the guest is waiting on their inviter: they asked, and nobody has paid or covered them yet. */

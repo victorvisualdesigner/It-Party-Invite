@@ -1,7 +1,7 @@
 // What the guest page may know, screen by screen. Before a correct number and key, only the masked
 // number (or a screen with no details) leaves the server.
 import "server-only";
-import { ASK_STATUSES, canAskInviter, inviterPayPath, isAskingInviter } from "@/lib/ask-inviter";
+import { ASK_STATUSES, askAllowed, canAskInviter, inviterPayPath, isAskingInviter } from "@/lib/ask-inviter";
 import { audit } from "@/lib/audit";
 import { t } from "@/lib/copy";
 import { db } from "@/lib/db";
@@ -14,6 +14,7 @@ import { askInviterMessage } from "@/lib/messages";
 import { formatNaira, nairaDigits } from "@/lib/money";
 import { liveGuestPayment, liveMemberPayment, openGuestPayment, paidByCover, paidSoFar, paymentView, type PaymentView } from "@/lib/payments";
 import { maskPhone, normalizePhone } from "@/lib/phone";
+import { seatPrice } from "@/lib/price";
 import { getEvent } from "@/lib/settings";
 import { addInviteDevice } from "@/lib/session";
 import { ticketQrSvg } from "@/lib/tickets";
@@ -71,18 +72,36 @@ export type GuestView =
       ask_href: string | null;
       /** Pay small small, when the event allows it and the guest has not paid in full. */
       parts: PartsView | null;
+      /** This guest gets the black and gold VIP card. */
+      vip: boolean;
+      /** The guest may say their inviter is paying. A host can turn it off, or turn a request down. */
+      can_ask: boolean;
+      /** A host turned down their request for the inviter to pay. They pay themselves now. */
+      ask_rejected: boolean;
       ticket_code: string | null;
       qr: string | null;
     });
 
 /** What a guest paying in parts sees: what is in, what is left, and the smallest part they can send. */
-export type PartsView = { paid: string | null; balance: string; balance_digits: string; min: string; min_digits: string };
+export type PartsView = {
+  paid: string | null;
+  paid_digits: string;
+  price: string;
+  price_digits: string;
+  balance: string;
+  balance_digits: string;
+  min: string;
+  min_digits: string;
+};
 
 export function partsView(priceKobo: number, paidKobo: number): PartsView {
   const balance = balanceKobo(priceKobo, paidKobo);
   const { min } = partBounds(balance);
   return {
     paid: paidKobo > 0 ? formatNaira(paidKobo) : null,
+    paid_digits: nairaDigits(paidKobo),
+    price: formatNaira(priceKobo),
+    price_digits: nairaDigits(priceKobo),
     balance: formatNaira(balance),
     balance_digits: nairaDigits(balance),
     min: formatNaira(min),
@@ -90,7 +109,7 @@ export function partsView(priceKobo: number, paidKobo: number): PartsView {
   };
 }
 
-export function eventView(e: EventRow, paid: boolean): EventView {
+export function eventView(e: EventRow, paid: boolean, priceKobo: number = e.price_kobo): EventView {
   const dateShown = isRevealed(e.reveal_date_mode, e.reveal_date_at, paid) && !!e.starts_at;
   const venueShown = isRevealed(e.reveal_venue_mode, e.reveal_venue_at, paid);
   const days = eventDays(e);
@@ -110,7 +129,7 @@ export function eventView(e: EventRow, paid: boolean): EventView {
     venue_address: venueShown ? e.venue_address : null,
     venue_hint: revealHint(e.reveal_venue_mode, e.reveal_venue_at, e.starts_at),
     dress: e.dress_code,
-    price: formatNaira(e.price_kobo),
+    price: formatNaira(priceKobo),
     refund: e.refund_text,
     card: e.card,
   };
@@ -153,7 +172,7 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
   const base = {
     guest: inv.guest_first_name,
     inviter: inviter?.first_name ?? "",
-    event: eventView(event, paid),
+    event: eventView(event, paid, seatPrice(inv, event)),
     status: inv.status,
     covered: inv.covered,
     taps: inv.no_taps,
@@ -162,6 +181,9 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
     by_member: false,
     ask_href: null as string | null,
     parts: null as PartsView | null,
+    vip: !!inv.vip,
+    can_ask: askAllowed(inv),
+    ask_rejected: !!inv.pay_request_rejected_at && !paid,
     ticket_code: paid ? inv.ticket_code : null,
     qr: paid && inv.ticket_code ? await ticketQrSvg(inv.ticket_code) : null,
   };
@@ -171,7 +193,8 @@ export async function guestState(inv: Invite | null, mine: boolean): Promise<Gue
   const p = await liveGuestPayment(inv.id);
   if (p) base.payment = await paymentView(p);
   const paidKobo = event.installments && !inv.covered ? await paidSoFar(inv.id) : 0;
-  if (event.installments && !inv.covered && event.price_kobo > 0) base.parts = partsView(event.price_kobo, paidKobo);
+  const price = seatPrice(inv, event);
+  if (event.installments && !inv.covered && price > 0) base.parts = partsView(price, paidKobo);
   // Their inviter sent a transfer for them and the host is checking it: no account details, just wait.
   const mp = await liveMemberPayment(inv.id);
   if (mp?.status === "claimed" && inv.yes_at && p?.status !== "claimed") return { screen: "wait", ...base, by_member: true };
@@ -250,7 +273,7 @@ export async function sayYes(inv: Invite): Promise<YesResult> {
   if (!event.invites_open) return { kind: "refresh" };
   const yesAt = inv.yes_at ?? new Date().toISOString();
   if (!inv.yes_at) await db().from("invites").update({ yes_at: yesAt }).eq("id", inv.id);
-  if (inv.covered || event.price_kobo === 0) {
+  if (inv.covered || seatPrice(inv, event) === 0) {
     const paid = await paidByCover({ ...inv, yes_at: yesAt });
     await audit("guest", null, "said_yes", {}, inv.id);
     return paid ? (inv.covered ? { kind: "covered" } : { kind: "paid" }) : { kind: "refresh" };
@@ -281,6 +304,8 @@ export async function sayYes(inv: Invite): Promise<YesResult> {
  */
 export async function askInviter(inv: Invite, ask: boolean): Promise<boolean> {
   if (!canAskInviter(inv)) return false;
+  // A host turned this off for the guest, or turned their request down: they pay themselves.
+  if (ask && !askAllowed(inv)) return false;
   const event = await getEvent(inv.event_id);
   if (!event.invites_open) return false;
   if (!!inv.pay_requested_at === ask) return true;

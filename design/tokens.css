@@ -59,6 +59,20 @@
   --paper-flap-2: #E3D5BC;
   --paper-card-edge: #ECE1CD;
 
+  /* The VIP card: black label paper and its own gold, whatever foil the event picked. */
+  --vip-950: #08080A;
+  --vip-900: #111013;
+  --vip-850: #18161A;
+  --vip-800: #201D22;
+  --vip-700: #2E2A2C;
+  --vip-cream: #F6EFDF;
+  --vip-quiet: #B9AE95;
+  --vip-gold-300: #F0DCA0;
+  --vip-gold-400: #DDBD6E;
+  --vip-gold-500: #C9A24C;
+  --vip-gold-600: #A9833A;
+  --vip-foil-dark: #9A7629;
+  --vip-foil-light: #FFF0C2;
   --wax-dark: #651010;    /* seal shadow side */
   --wax-light: #BF3A3A;   /* seal highlight */
 

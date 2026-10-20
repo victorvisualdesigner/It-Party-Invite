@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState, useTransition, type FormEvent } from "react";
+import { Dialog } from "@/components/Dialog";
 import { ConfirmDialog, KeyDialog } from "@/components/admin/Dialogs";
 import { Icon } from "@/components/Icon";
 import { MiniSeal } from "@/components/Seal";
@@ -11,7 +12,7 @@ import { t, tList } from "@/lib/copy";
 import type { KeyedMessage } from "@/lib/invites";
 import { timeAgo } from "@/lib/time";
 import type { InviteStatus } from "@/lib/types";
-import { cancelInviteAction, letInFreeAction, resetAccessAction } from "./actions";
+import { cancelInviteAction, letInFreeAction, rejectAskAction, resetAccessAction, setAskAllowedAction, setPriceAction, setVipAction } from "./actions";
 
 const STATUSES: InviteStatus[] = ["sent", "opened", "said_yes", "awaiting_confirmation", "paid", "expired", "cancelled"];
 const ACTIVE: InviteStatus[] = ["sent", "opened", "said_yes", "awaiting_confirmation"];
@@ -46,12 +47,187 @@ export function ExportPaidButton({ rows }: { rows: GuestRow[] }) {
   );
 }
 
+/* ---------- One guest's controls: price, VIP card, inviter paying ---------- */
+
+function ManageDialog({ row, onClose }: { row: GuestRow; onClose: () => void }) {
+  const toast = useToast();
+  const titleId = useId();
+  const [price, setPrice] = useState(row.ownPriceDigits);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const [vip, setVip] = useState(row.vip);
+  const [askOn, setAskOn] = useState(row.askOn);
+  const [asking, setAsking] = useState(!!row.askedAt);
+  const [rejecting, setRejecting] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [busy, setBusy] = useState<string | null>(null);
+  const vars = { guest: row.guest, inviter: row.inviter };
+
+  function run(key: string, work: () => Promise<void>) {
+    setBusy(key);
+    startTransition(async () => {
+      await work();
+      setBusy(null);
+    });
+  }
+  function savePrice(e: FormEvent) {
+    e.preventDefault();
+    if (pending) return;
+    setPriceError(null);
+    run("price", async () => {
+      const r = await callAction(() => setPriceAction(row.id, price));
+      if (r.ok) toast(r.data.paid ? t("admin.guests.manage.price_free_done", vars) : t("admin.guests.manage.price_saved", vars));
+      else if ("errors" in r && r.errors?.price) setPriceError(r.errors.price);
+      else toast(t("admin.common.error_network"));
+    });
+  }
+  function toggleVip(on: boolean) {
+    setVip(on);
+    run("vip", async () => {
+      const r = await callAction(() => setVipAction(row.id, on));
+      if (r.ok) toast(on ? t("admin.guests.manage.vip_on", vars) : t("admin.guests.manage.vip_off", vars));
+      else {
+        setVip(!on);
+        toast(t("admin.common.error_network"));
+      }
+    });
+  }
+  function toggleAsk(on: boolean) {
+    setAskOn(on);
+    run("ask", async () => {
+      const r = await callAction(() => setAskAllowedAction(row.id, on));
+      if (r.ok) {
+        if (!on) setAsking(false);
+        toast(on ? t("admin.guests.manage.ask_on_done", vars) : t("admin.guests.manage.ask_off_done", vars));
+      } else {
+        setAskOn(!on);
+        toast(t("admin.common.error_network"));
+      }
+    });
+  }
+  function reject() {
+    run("reject", async () => {
+      const r = await callAction(() => rejectAskAction(row.id));
+      setRejecting(false);
+      if (r.ok) {
+        setAsking(false);
+        setAskOn(false);
+        toast(t("admin.guests.manage.reject_done", vars));
+      } else toast(t("admin.common.error_network"));
+    });
+  }
+
+  if (rejecting) {
+    return (
+      <ConfirmDialog
+        title={t("admin.guests.manage.reject_title", vars)}
+        body={t("admin.guests.manage.reject_body", vars)}
+        okLabel={t("admin.guests.manage.reject")}
+        danger
+        onClose={() => setRejecting(false)}
+        onOk={async () => reject()}
+      />
+    );
+  }
+
+  return (
+    <Dialog labelledBy={titleId} onClose={onClose}>
+      <div className="manage">
+        <header className="manage-head">
+          <MiniSeal letter={row.guest.charAt(0).toUpperCase()} />
+          <div>
+            <h2 id={titleId}>{row.guest}</h2>
+            <small>{t("admin.guests.manage.subtitle", vars)}</small>
+          </div>
+          <span className={`chip chip-${row.status}`}>{t(statusKey(row.status))}</span>
+        </header>
+
+        <section className="manage-part" aria-labelledby={`${titleId}-price`}>
+          <h3 id={`${titleId}-price`}>{t("admin.guests.manage.price_title")}</h3>
+          {row.canPrice ? (
+            <form className="manage-price" noValidate onSubmit={savePrice}>
+              <label htmlFor={`${titleId}-p`}>{t("admin.guests.manage.price_label", vars)}</label>
+              <div className="manage-price-row">
+                <div className="input-affix">
+                  <span className="affix">₦</span>
+                  <input
+                    className="input num"
+                    id={`${titleId}-p`}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder={row.eventPrice.replace(/[₦,]/g, "")}
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value.replace(/[^\d,]/g, ""))}
+                    aria-invalid={priceError ? true : undefined}
+                    aria-describedby={`${titleId}-ph`}
+                  />
+                </div>
+                <button className="btn btn-gold btn-sm" type="submit" disabled={pending} aria-busy={busy === "price"}>
+                  {t("admin.guests.manage.price_save")}
+                </button>
+              </div>
+              <span className="help" id={`${titleId}-ph`}>
+                {t("admin.guests.manage.price_help", { price: row.eventPrice })}
+              </span>
+              {priceError ? (
+                <p className="error" role="alert">
+                  {priceError}
+                </p>
+              ) : null}
+            </form>
+          ) : (
+            <p className="quiet">{t("admin.guests.manage.price_locked")}</p>
+          )}
+        </section>
+
+        <section className="manage-part" aria-labelledby={`${titleId}-vip`}>
+          <h3 id={`${titleId}-vip`}>{t("admin.guests.manage.vip_title")}</h3>
+          <label className="switch" htmlFor={`${titleId}-v`}>
+            <span>
+              <b>{t("admin.guests.manage.vip_label", vars)}</b>
+              <small>{t("admin.guests.manage.vip_help")}</small>
+            </span>
+            <input type="checkbox" id={`${titleId}-v`} checked={vip} disabled={busy === "vip"} aria-busy={busy === "vip"} onChange={(e) => toggleVip(e.target.checked)} />
+          </label>
+        </section>
+
+        <section className="manage-part" aria-labelledby={`${titleId}-ask`}>
+          <h3 id={`${titleId}-ask`}>{t("admin.guests.manage.ask_title")}</h3>
+          {asking && row.askedAt ? (
+            <div className="manage-note">
+              <p>{t("admin.guests.manage.asking_note", { ...vars, when: timeAgo(row.askedAt) })}</p>
+              <button className="btn btn-danger btn-sm" type="button" disabled={pending} aria-busy={busy === "reject"} onClick={() => setRejecting(true)}>
+                <Icon name="x" />
+                <span>{t("admin.guests.manage.reject")}</span>
+              </button>
+            </div>
+          ) : null}
+          <label className="switch" htmlFor={`${titleId}-a`}>
+            <span>
+              <b>{t("admin.guests.manage.ask_label", vars)}</b>
+              <small>{t("admin.guests.manage.ask_help", vars)}</small>
+            </span>
+            <input type="checkbox" id={`${titleId}-a`} checked={askOn} disabled={busy === "ask"} aria-busy={busy === "ask"} onChange={(e) => toggleAsk(e.target.checked)} />
+          </label>
+          {!askOn && row.askRejected ? <p className="quiet">{t("admin.guests.manage.rejected_note", vars)}</p> : null}
+        </section>
+
+        <div className="actions">
+          <button className="btn btn-ghost btn-sm" type="button" onClick={onClose} data-autofocus>
+            {t("admin.guests.manage.done")}
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { id: string; name: string }[] }) {
   const toast = useToast();
   const [status, setStatus] = useState<"all" | InviteStatus>("all");
   const [inviter, setInviter] = useState("all");
   const [q, setQ] = useState("");
   const [confirm, setConfirm] = useState<{ kind: "reset" | "cancel" | "free"; row: GuestRow } | null>(null);
+  const [managing, setManaging] = useState<GuestRow | null>(null);
   const [keyed, setKeyed] = useState<KeyedMessage | null>(null);
   const cols = tList("admin.guests.columns");
 
@@ -126,6 +302,8 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
                         <span className={`chip chip-${r.status}`}>{t(statusKey(r.status))}</span>
                         {r.covered && r.status !== "paid" ? <span className="chip chip-covered">{t("member.status.covered")}</span> : null}
                         {r.asked ? <span className="chip chip-asked">{t("admin.guests.asked")}</span> : null}
+                        {r.vip ? <span className="chip chip-vip">{t("admin.guests.manage.vip_chip")}</span> : null}
+                        {r.ownPrice ? <span className="chip chip-price">{t("admin.guests.manage.own_price_chip", { price: r.ownPrice })}</span> : null}
                       </td>
                       <td className="taps-cell">
                         <b>{r.taps}</b>
@@ -152,6 +330,12 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
                       <td className="num-cell quiet">{timeAgo(r.sentAt)}</td>
                       <td>
                         <div className="row-actions">
+                          {r.status !== "cancelled" ? (
+                            <button className="btn btn-ghost btn-sm manage-btn" type="button" aria-label={`${t("admin.guests.manage.button")} ${r.guest}`} onClick={() => setManaging(r)}>
+                              <Icon name="more" />
+                              <span>{t("admin.guests.manage.button")}</span>
+                            </button>
+                          ) : null}
                           {r.notifyHref ? (
                             <a className="icon-btn" href={r.notifyHref} target="_blank" rel="noopener noreferrer" title={t("admin.payments.notify_guest", { guest: r.guest })} aria-label={t("admin.payments.notify_guest", { guest: r.guest })}>
                               <Icon name="whatsapp" />
@@ -240,6 +424,7 @@ export function GuestsTable({ rows, inviters }: { rows: GuestRow[]; inviters: { 
           }}
         />
       ) : null}
+      {managing ? <ManageDialog row={managing} onClose={() => setManaging(null)} /> : null}
       {keyed ? (
         <KeyDialog
           name={keyed.guest}

@@ -116,11 +116,46 @@ body {
 .sheet .field { margin-bottom: 14px; }
 .sheet-actions { display: grid; gap: 10px; }
 .sheet-actions .btn { min-height: 54px; }
-/* Pay small small: a quiet text button that opens the amount field. */
-.parts { display: grid; gap: 10px; margin-top: 12px; }
-.link-btn { justify-self: start; padding: 6px 0; border: 0; background: none; color: var(--gold-300); font: inherit; font-size: 15px; font-weight: var(--weight-ui-strong); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
-.parts .input { font-size: 18px; }
+/* Pay small small. First the choice, as two big options; then one large amount field with quick
+   amounts and a live line about what will be left. A bar shows what is paid of the whole price. */
+.plan { display: grid; gap: 14px; margin: 4px 0 14px; }
+.plan-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.plan-choice legend { grid-column: 1 / -1; padding: 0; margin-bottom: 10px; font-size: 13px; font-weight: var(--weight-ui-strong); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mist-400); }
+.plan-opt { position: relative; display: grid; cursor: pointer; }
+.plan-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.plan-opt > span { display: grid; align-content: start; gap: 4px; min-height: 72px; padding: 14px 14px 12px 40px; border-radius: var(--radius-md); background: rgba(10, 29, 23, 0.45); box-shadow: inset 0 0 0 1px var(--green-700); transition: box-shadow 0.2s, background-color 0.2s; }
+.plan-opt > span::before { content: ""; position: absolute; left: 14px; top: 17px; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--mist-400); }
+.plan-opt b { font-size: 16px; font-weight: var(--weight-ui-strong); color: var(--mist-100); }
+.plan-opt small { font-size: 13px; color: var(--mist-400); font-variant-numeric: tabular-nums; }
+.plan-opt input:checked + span { background: rgba(200, 162, 74, 0.12); box-shadow: inset 0 0 0 1.5px var(--gold-500); }
+.plan-opt input:checked + span::before { box-shadow: inset 0 0 0 5px var(--gold-500); }
+.plan-opt input:checked + span small { color: var(--gold-300); }
+.plan-opt input:focus-visible + span { outline: 2px solid var(--gold-400); outline-offset: 2px; }
+.part-panel { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius-md); background: rgba(10, 29, 23, 0.55); box-shadow: inset 0 0 0 1px var(--green-700); }
+.part-panel > label { font-size: 15px; font-weight: var(--weight-ui-strong); color: var(--mist-100); }
+.part-input .input { height: 60px; font-size: 26px; font-weight: var(--weight-ui-strong); padding-left: 40px; font-variant-numeric: tabular-nums; }
+.part-input .affix { font-size: 22px; }
+.quick { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick:empty { display: none; }
+.chip-btn { height: 36px; padding: 0 14px; border-radius: var(--radius-pill); border: 0; background: rgba(233, 239, 235, 0.07); box-shadow: inset 0 0 0 1px rgba(157, 178, 168, 0.3); color: var(--mist-100); font: inherit; font-size: 14px; font-weight: var(--weight-ui-strong); font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation; }
+.chip-btn[aria-pressed="true"] { background: var(--gold-500); color: var(--ink-900); box-shadow: none; }
+.part-after { margin: 0; min-height: 1.4em; font-size: 15px; color: var(--gold-300); }
+.part-panel .help { margin: 0; font-size: 13px; color: var(--mist-400); }
+.progress { display: grid; gap: 6px; }
+.progress .bar { position: relative; height: 8px; border-radius: var(--radius-pill); background: rgba(233, 239, 235, 0.1); overflow: hidden; }
+.progress .bar i, .progress .bar b { position: absolute; inset: 0; transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.4s var(--ease-out, ease-out); }
+.progress .bar i { background: linear-gradient(90deg, var(--gold-600), var(--gold-400)); }
+.progress .bar b { background: rgba(232, 209, 147, 0.45); transform-origin: 0 50%; }
+.progress span { font-size: 13px; color: var(--mist-400); font-variant-numeric: tabular-nums; }
+#held-progress { width: 100%; max-width: 300px; }
 .rows .so-far .v { color: var(--gold-300); }
+.details dd .parts-hint { display: block; margin-top: 2px; font-size: 13px; font-weight: 400; color: var(--gold-700); }
+/* A host turned down their request: a calm note, not an error. */
+.notice { margin: 0; padding: 12px 16px; max-width: 34ch; border-radius: var(--radius-md); background: rgba(200, 162, 74, 0.12); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.45); color: var(--mist-100); font-size: 15px; line-height: 1.5; }
+/* Waiting on the inviter: a small live chip above the title. */
+.pending { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px; border-radius: var(--radius-pill); background: rgba(200, 162, 74, 0.12); box-shadow: inset 0 0 0 1px rgba(200, 162, 74, 0.5); color: var(--gold-300); font-size: 13px; font-weight: var(--weight-ui-strong); }
+.pending i { width: 8px; height: 8px; border-radius: 50%; background: var(--gold-400); animation: chip-pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .pending i { animation: none; } .progress .bar i, .progress .bar b { transition: none; } }
 /* Buttons that carry a name can wrap on a narrow phone instead of running off the edge. */
 #btn-ask, #asked-wa { white-space: normal; text-align: center; line-height: 1.25; padding-block: 10px; }
 
@@ -237,4 +272,79 @@ body {
 @media (prefers-reduced-motion: reduce) {
   #s-card .invite, .card-shine::before, #s-card .corner, #s-card .question .orn { animation: none; }
   .card-shine { display: none; }
+}
+
+/* ---------- The VIP card ----------
+   Black label paper and the VIP gold, whatever the event chose. On arrival the crest swings in, the
+   gold frame draws itself round the card, and "VIP invitation" settles under the crest. Then the
+   card keeps living: the crest glows, sparks twinkle at the edges and the glint crosses the paper.
+   Transform and opacity only. Every value is a token from tokens.css. */
+.vip-only { display: none; }
+html[data-vip] .vip-only { display: block; }
+html[data-vip] {
+  --green-950: var(--vip-950); --green-900: var(--vip-900); --green-850: var(--vip-850); --green-800: var(--vip-800);
+  --green-700: var(--vip-700); --green-680: var(--vip-800); --green-650: var(--vip-850); --green-600: var(--vip-700);
+  --mist-100: var(--vip-cream); --mist-400: var(--vip-quiet);
+  --gold-300: var(--vip-gold-300); --gold-400: var(--vip-gold-400); --gold-500: var(--vip-gold-500); --gold-600: var(--vip-gold-600);
+  --foil-dark: var(--vip-foil-dark); --foil-light: var(--vip-foil-light);
+}
+html[data-vip] .invite {
+  --cream-50: var(--vip-850); --cream-100: var(--vip-900); --cream-200: rgba(201, 162, 76, 0.28); --paper-card-edge: var(--vip-950);
+  --ink-900: var(--vip-cream); --ink-600: var(--vip-quiet); --gold-700: var(--vip-gold-400);
+  padding-top: 24px;
+  background-color: var(--vip-900);
+  background-image: var(--noise, none),
+    radial-gradient(120% 55% at 50% 0%, rgba(201, 162, 76, 0.18) 0%, transparent 65%),
+    repeating-radial-gradient(circle at 50% 118%, rgba(201, 162, 76, 0.06) 0 1px, transparent 1px 11px),
+    linear-gradient(172deg, var(--vip-850), var(--vip-900) 55%, var(--vip-950));
+  box-shadow: 0 34px 70px -26px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(201, 162, 76, 0.32), 0 0 48px -12px rgba(201, 162, 76, 0.3);
+}
+html[data-vip] .invite::before { border-color: transparent; }
+html[data-vip] .invite::after { border-color: rgba(201, 162, 76, 0.22); }
+html[data-vip] .corner { color: var(--vip-gold-400); opacity: 0.95; }
+html[data-vip] .salute { color: var(--vip-gold-300); }
+html[data-vip] .btn-yes, html[data-vip] .day-num, html[data-vip] .chip-btn[aria-pressed="true"] { color: var(--vip-950); }
+html[data-vip] .btn-no.roaming { background: var(--vip-850); color: var(--vip-cream); border-color: var(--vip-gold-500); }
+html[data-vip] .card-shine::before { background: linear-gradient(100deg, transparent 0%, rgba(201, 162, 76, 0.1) 32%, rgba(240, 220, 160, 0.32) 46%, rgba(255, 240, 194, 0.5) 50%, rgba(240, 220, 160, 0.32) 54%, rgba(201, 162, 76, 0.1) 68%, transparent 100%); }
+html[data-vip] .envelope {
+  --paper-back: var(--vip-800); --paper-deep: var(--vip-950); --paper-fold-1: var(--vip-800); --paper-fold-2: var(--vip-850); --paper-fold-3: var(--vip-850);
+  --paper-fold-4: var(--vip-700); --paper-fold-5: var(--vip-800); --paper-flap-1: var(--vip-700); --paper-flap-2: var(--vip-850); --cream-50: var(--vip-850); --ink-600: var(--vip-gold-400);
+}
+
+/* The crest and its line */
+html[data-vip] .vip-crest { position: relative; width: 136px; margin: 0 auto 2px; animation: vip-crest-in 1.1s var(--ease-out) 0.5s backwards; }
+.vip-crest svg { position: relative; z-index: 1; display: block; width: 100%; height: auto; overflow: visible; }
+.vip-crest::after { content: ""; position: absolute; left: 50%; top: 62%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; background: radial-gradient(circle, rgba(240, 220, 160, 0.4), transparent 66%); opacity: 0.3; pointer-events: none; animation: vip-glow 4.2s ease-in-out 1.6s infinite; }
+html[data-vip] .vip-tag { margin: 0 0 16px; text-align: center; font-size: 11px; font-weight: var(--weight-ui-strong); letter-spacing: 0.34em; text-transform: uppercase; color: var(--vip-gold-400); animation: vip-rise 0.8s var(--ease-out) 1.05s backwards; }
+@keyframes vip-crest-in { 0% { opacity: 0; transform: scale(0.6) rotate(-8deg); } 60% { opacity: 1; transform: scale(1.06) rotate(1deg); } 100% { opacity: 1; transform: none; } }
+@keyframes vip-glow { 0%, 100% { opacity: 0.25; transform: scale(0.9); } 50% { opacity: 0.75; transform: scale(1.12); } }
+@keyframes vip-rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+/* The gold frame draws itself, top and bottom from the middle out, then the sides. */
+.vip-edge { position: absolute; z-index: 1; pointer-events: none; }
+.vip-edge.t, .vip-edge.b { left: 10px; right: 10px; height: 1px; background: linear-gradient(90deg, var(--vip-foil-dark), var(--vip-foil-light) 50%, var(--vip-foil-dark)); animation: vip-draw-x 1s var(--ease-out) 0.6s backwards; }
+.vip-edge.t { top: 10px; }
+.vip-edge.b { bottom: 10px; animation-delay: 0.75s; }
+.vip-edge.l, .vip-edge.r { top: 10px; bottom: 10px; width: 1px; background: linear-gradient(180deg, var(--vip-foil-dark), var(--vip-foil-light) 50%, var(--vip-foil-dark)); animation: vip-draw-y 1s var(--ease-out) 0.9s backwards; }
+.vip-edge.l { left: 10px; }
+.vip-edge.r { right: 10px; animation-delay: 1.05s; }
+@keyframes vip-draw-x { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
+@keyframes vip-draw-y { from { opacity: 0; transform: scaleY(0); } to { opacity: 1; transform: scaleY(1); } }
+
+/* Four pointed sparks that twinkle in turn around the frame. */
+.vip-spark { position: absolute; z-index: 2; width: 14px; height: 14px; pointer-events: none; opacity: 0; transform: scale(0);
+  background: radial-gradient(circle, var(--vip-foil-light) 0 16%, var(--vip-gold-400) 34%, transparent 70%);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  animation: vip-twinkle 4.2s ease-in-out infinite; }
+.vip-spark.s1 { top: 3px; left: 22%; animation-delay: 1.9s; }
+.vip-spark.s2 { top: 26%; right: 3px; animation-delay: 2.6s; }
+.vip-spark.s3 { bottom: 34%; left: 3px; animation-delay: 3.2s; }
+.vip-spark.s4 { bottom: 3px; right: 28%; animation-delay: 3.9s; }
+.vip-spark.s5 { top: 3px; right: 16%; animation-delay: 4.5s; }
+.vip-spark.s6 { bottom: 3px; left: 14%; animation-delay: 5.1s; }
+@keyframes vip-twinkle { 0%, 72%, 100% { opacity: 0; transform: scale(0) rotate(0deg); } 82% { opacity: 1; transform: scale(1) rotate(45deg); } 92% { opacity: 0.5; transform: scale(0.55) rotate(90deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-vip] .vip-crest, .vip-crest::after, html[data-vip] .vip-tag, .vip-edge { animation: none; }
+  .vip-spark { display: none !important; }
 }
