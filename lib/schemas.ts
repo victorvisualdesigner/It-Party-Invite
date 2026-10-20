@@ -213,13 +213,26 @@ export function parseSlotLimit(value: unknown): { ok: true; value: number | null
 export const MAX_GUESTS_PER_BATCH = 20;
 
 export const guestRowsSchema = z
-  .array(z.object({ first_name: text(200), phone: text(40), pay: z.boolean().optional() }))
+  .array(
+    z.object({
+      first_name: text(200),
+      phone: text(40),
+      pay: z.boolean().optional(),
+      // Hosts only: their own price in naira (empty for the event's), the VIP card, and whether they
+      // may say their inviter is paying. Members' rows never carry these; the server ignores them anyway.
+      price: text(20).optional(),
+      vip: z.boolean().optional(),
+      ask: z.boolean().optional(),
+    }),
+  )
   .min(1)
   .max(MAX_GUESTS_PER_BATCH);
 export type GuestRowsInput = z.infer<typeof guestRowsSchema>;
 
-/** Field errors are keyed rows.{i}.first_name and rows.{i}.phone. */
-export function parseGuestRows(raw: unknown): Parsed<{ first_name: string; phone_e164: string; pay: boolean }[]> {
+export type GuestRow = { first_name: string; phone_e164: string; pay: boolean; price_kobo: number | null; vip: boolean; ask_off: boolean };
+
+/** Field errors are keyed rows.{i}.first_name, rows.{i}.phone and rows.{i}.price. */
+export function parseGuestRows(raw: unknown): Parsed<GuestRow[]> {
   const shape = guestRowsSchema.safeParse(raw);
   if (!shape.success) return { ok: false, errors: { form: t("member.new_invite.name_error") } };
   const errors: FieldErrors = {};
@@ -228,7 +241,10 @@ export function parseGuestRows(raw: unknown): Parsed<{ first_name: string; phone
     if (!firstName || firstName.length > 40) errors[`rows.${i}.first_name`] = t("member.new_invite.name_error");
     const phone = normalizePhone(row.phone);
     if (!phone) errors[`rows.${i}.phone`] = t("member.new_invite.phone_error");
-    return { first_name: firstName, phone_e164: phone ?? "", pay: row.pay === true };
+    const rawPrice = String(row.price ?? "").trim();
+    const price = rawPrice === "" ? null : nairaToKobo(rawPrice);
+    if (rawPrice !== "" && price == null) errors[`rows.${i}.price`] = t("member.new_invite.price_error");
+    return { first_name: firstName, phone_e164: phone ?? "", pay: row.pay === true, price_kobo: price, vip: row.vip === true, ask_off: row.ask === false };
   });
   if (Object.keys(errors).length) return { ok: false, errors };
   return { ok: true, value: rows };

@@ -275,6 +275,17 @@
       "send_again": "Open WhatsApp again",
       "comp_toggle": "Free for them",
       "comp_help": "You're covering it. They get in without paying.",
+      "extras_title": "Just for {guest}",
+      "price_label": "Their price",
+      "price_help": "Leave it empty for the event price, or enter 0 to let them in free.",
+      "price_error": "Enter a whole number of naira, or leave it empty.",
+      "vip_toggle": "Send the VIP card",
+      "vip_help": "Black and gold, with a crest and moving foil.",
+      "ask_toggle": "They can say you're paying for them",
+      "ask_help": "Turn this off and they only see the transfer details.",
+      "extras_vip": "VIP card",
+      "extras_price": "Their price {price}",
+      "extras_no_ask": "Pays for themselves",
       "pay_button": "Pay for {guest}"
     },
     "status": {

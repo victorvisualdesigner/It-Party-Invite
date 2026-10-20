@@ -27,6 +27,13 @@
 .pay-switch { padding-top: 10px; border-top: 1px solid var(--line); text-align: left; }
 .pay-switch b { display: block; font-size: 15px; font-weight: var(--weight-ui-strong); }
 .pay-switch small { display: block; margin-top: 2px; font-size: 13px; color: var(--fg-quiet); line-height: 1.4; }
+/* A host's options for one guest: their price, the VIP card, and whether they may say you're paying. */
+.extras { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.extras-title { margin: 0; font-size: 12px; font-weight: var(--weight-ui-strong); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-quiet); }
+.extras .field { display: grid; gap: 6px; }
+.extras .field label { font-size: 14px; font-weight: var(--weight-ui-strong); }
+.extras .pay-switch { padding-top: 0; border-top: 0; }
+.draft-extras { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; }
 
 /* Two steps, always visible: where you are and what comes next. */
 .steps-bar { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 13px; font-weight: var(--weight-ui-strong); color: var(--fg-quiet); }

@@ -8,6 +8,7 @@ import { db, isUniqueViolation } from "@/lib/db";
 import { appUrl } from "@/lib/env";
 import { generateKey, hashKey } from "@/lib/keys";
 import { assembleMessage, randomCombo, randomCoveredLine, randomKeyLine } from "@/lib/messages";
+import { formatNaira } from "@/lib/money";
 import { localPhone, maskPhone } from "@/lib/phone";
 import { getEvent } from "@/lib/settings";
 import { EXPIRABLE_STATUSES, isHost, SLOT_STATUSES, type ActorType, type EventRow, type Invite, type Person } from "@/lib/types";
@@ -129,8 +130,12 @@ export async function sendBlocker(inviter: Inviter, n = 1): Promise<string | nul
 
 /* ---------- Drafts ---------- */
 
-/** `pay`: the inviter covers this guest. A member then transfers; a host simply lets them in free. */
-export type DraftRow = { first_name: string; phone_e164: string; pay?: boolean };
+/**
+ * `pay`: the inviter covers this guest. A member then transfers; a host simply lets them in free.
+ * Hosts only: `price_kobo` is the guest's own price (null for the event's), `vip` sends the VIP
+ * card, and `ask_off` stops them saying their inviter is paying.
+ */
+export type DraftRow = { first_name: string; phone_e164: string; pay?: boolean; price_kobo?: number | null; vip?: boolean; ask_off?: boolean };
 
 export type DraftView = {
   id: string;
@@ -143,6 +148,8 @@ export type DraftView = {
   smsHref: string;
   /** The inviter is covering this guest. */
   paying: boolean;
+  /** What a host set just for this guest, as short tags: VIP card, their price, pays for themselves. */
+  extras: string[];
 };
 
 function draftMessage(
@@ -174,6 +181,11 @@ function toDraftView(inv: Invite, inviterName: string): DraftView {
     waHref: waLink(inv.guest_phone_e164, message),
     smsHref: smsLink(inv.guest_phone_e164, message),
     paying: inv.covered_line_index != null,
+    extras: [
+      ...(inv.vip ? [t("member.new_invite.extras_vip")] : []),
+      ...(inv.price_kobo != null ? [t("member.new_invite.extras_price", { price: inv.price_kobo === 0 ? t("admin.guests.manage.free") : formatNaira(inv.price_kobo) })] : []),
+      ...(inv.ask_inviter_off ? [t("member.new_invite.extras_no_ask")] : []),
+    ],
   };
 }
 
@@ -195,6 +207,10 @@ async function insertDraft(inviter: Inviter, row: DraftRow): Promise<Invite> {
         key_line_index: randomKeyLine(),
         covered_line_index: row.pay ? randomCoveredLine() : null,
         status: "draft",
+        // Only hosts set these. A member's rows are ignored here, whatever they send.
+        ...(isHost(inviter.role)
+          ? { price_kobo: row.pay ? null : row.price_kobo ?? null, vip: !!row.vip, ask_inviter_off: !!row.ask_off }
+          : {}),
       })
       .select("*")
       .single();

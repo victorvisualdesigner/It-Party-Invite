@@ -57,3 +57,25 @@ describe("guest control copy", () => {
     for (const s of strings) expect(s).not.toMatch(/\s[-–—]\s/);
   });
 });
+
+describe("a host's options when inviting", () => {
+  it("reads their price, VIP card and whether they may say the inviter is paying", async () => {
+    const { parseGuestRows } = await import("@/lib/schemas");
+    const r = parseGuestRows([
+      { first_name: "Ada", phone: "0803 111 0001", pay: false, price: "30,000", vip: true, ask: false },
+      { first_name: "Bayo", phone: "0803 111 0002", pay: false },
+      { first_name: "Chi", phone: "0803 111 0003", pay: false, price: "0" },
+    ]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value[0]).toMatchObject({ price_kobo: 3_000_000, vip: true, ask_off: true });
+    expect(r.value[1]).toMatchObject({ price_kobo: null, vip: false, ask_off: false });
+    expect(r.value[2].price_kobo).toBe(0);
+  });
+
+  it("points at the price field when the price is not a whole number of naira", async () => {
+    const { parseGuestRows } = await import("@/lib/schemas");
+    const r = parseGuestRows([{ first_name: "Ada", phone: "0803 111 0001", pay: false, price: "30k" }]);
+    expect(!r.ok && r.errors["rows.0.price"]).toBe(copy.member.new_invite.price_error);
+  });
+});

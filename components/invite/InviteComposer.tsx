@@ -26,11 +26,17 @@ export type DraftView = {
   waHref: string;
   smsHref: string;
   paying: boolean;
+  extras: string[];
 };
 
 export type ComposerSlots = { left: number | null; total: number | null; unlimited: boolean };
 
-export type CreateInput = { phone?: string; key?: string; guests: { first_name: string; phone: string; pay: boolean }[] };
+export type CreateInput = {
+  phone?: string;
+  key?: string;
+  /** `price`, `vip` and `ask` come from hosts only. */
+  guests: { first_name: string; phone: string; pay: boolean; price?: string; vip?: boolean; ask?: boolean }[];
+};
 
 type Fail = { ok: false; errors?: FieldErrors; message?: string; network?: boolean; identity?: { name: string; slots: ComposerSlots } };
 export type CreateResult = { ok: true; data: { drafts: DraftView[]; name: string; slots: ComposerSlots } } | Fail;
@@ -54,8 +60,8 @@ type Props = {
   claimPayAction?: (paymentId: string, senderName: string) => Promise<ClaimPayResult>;
 };
 
-type Row = { first_name: string; phone: string; pay: boolean };
-const emptyRow = (): Row => ({ first_name: "", phone: "", pay: false });
+type Row = { first_name: string; phone: string; pay: boolean; price: string; vip: boolean; ask: boolean };
+const emptyRow = (): Row => ({ first_name: "", phone: "", pay: false, price: "", vip: false, ask: true });
 
 function Steps({ at }: { at: 1 | 2 }) {
   return (
@@ -172,6 +178,15 @@ function DraftCard({
           </span>
         ) : null}
       </div>
+      {d.extras.length ? (
+        <p className="draft-extras">
+          {d.extras.map((x) => (
+            <span key={x} className={x === t("member.new_invite.extras_vip") ? "chip chip-vip" : "chip chip-price"}>
+              {x}
+            </span>
+          ))}
+        </p>
+      ) : null}
       <Preview d={d} linkHost={linkHost} />
       <div className="draft-tools">
         <div className="keychip">
@@ -254,6 +269,7 @@ export function InviteComposer(props: Props) {
   const limit = Math.min(props.maxRows, slots && !slots.unlimited && slots.left != null ? Math.max(1, slots.left) : props.maxRows);
   const blocked = !!props.blocker && !!identity;
   const memberPays = props.payMode === "member" && !!props.openPayAction && !!props.claimPayAction;
+  const host = props.payMode === "host";
 
   function setRow(i: number, patch: Partial<Row>) {
     setRows((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -265,7 +281,12 @@ export function InviteComposer(props: Props) {
     setFormError(null);
     startTransition(async () => {
       const result = await callAction(() =>
-        props.createAction({ phone: identity ? undefined : me.phone, key: identity ? undefined : me.key, guests: rows }),
+        props.createAction({
+          phone: identity ? undefined : me.phone,
+          key: identity ? undefined : me.key,
+          // Members send only who and whether they pay. Hosts also send the guest's own options.
+          guests: rows.map((r) => (host ? r : { first_name: r.first_name, phone: r.phone, pay: r.pay })),
+        }),
       );
       if (result.ok) {
         setIdentity({ name: result.data.name });
@@ -512,6 +533,53 @@ export function InviteComposer(props: Props) {
                 </span>
                 <input type="checkbox" id={`f-rows-${i}-pay`} checked={row.pay} onChange={(e) => setRow(i, { pay: e.target.checked })} />
               </label>
+              {host ? (
+                <div className="extras" role="group" aria-labelledby={`f-rows-${i}-extras`}>
+                  <p className="extras-title" id={`f-rows-${i}-extras`}>
+                    {t("member.new_invite.extras_title", { guest: row.first_name.trim() || t("member.new_invite.guest_label", { n: i + 1 }) })}
+                  </p>
+                  {row.pay ? null : (
+                    <div className="field">
+                      <label htmlFor={`f-rows-${i}-price`}>{t("member.new_invite.price_label")}</label>
+                      <div className="input-affix">
+                        <span className="affix" aria-hidden="true">
+                          ₦
+                        </span>
+                        <input
+                          className="input num"
+                          id={`f-rows-${i}-price`}
+                          inputMode="numeric"
+                          autoComplete="off"
+                          value={row.price}
+                          onChange={(e) => setRow(i, { price: e.target.value.replace(/[^\d,]/g, "") })}
+                          aria-describedby={`f-rows-${i}-price-help`}
+                          {...invalid(`rows.${i}.price`)}
+                        />
+                      </div>
+                      <span className="help" id={`f-rows-${i}-price-help`}>
+                        {t("member.new_invite.price_help")}
+                      </span>
+                      {err(`rows.${i}.price`)}
+                    </div>
+                  )}
+                  <label className="switch pay-switch" htmlFor={`f-rows-${i}-vip`}>
+                    <span>
+                      <b>{t("member.new_invite.vip_toggle")}</b>
+                      <small>{t("member.new_invite.vip_help")}</small>
+                    </span>
+                    <input type="checkbox" id={`f-rows-${i}-vip`} checked={row.vip} onChange={(e) => setRow(i, { vip: e.target.checked })} />
+                  </label>
+                  {row.pay ? null : (
+                    <label className="switch pay-switch" htmlFor={`f-rows-${i}-ask`}>
+                      <span>
+                        <b>{t("member.new_invite.ask_toggle")}</b>
+                        <small>{t("member.new_invite.ask_help")}</small>
+                      </span>
+                      <input type="checkbox" id={`f-rows-${i}-ask`} checked={row.ask} onChange={(e) => setRow(i, { ask: e.target.checked })} />
+                    </label>
+                  )}
+                </div>
+              ) : null}
             </li>
           ))}
         </ol>
